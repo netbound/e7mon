@@ -55,16 +55,11 @@ func (em ExecutionMonitor) Start() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	pc, err := em.GetPeerCount()
+	interval, err := time.ParseDuration(em.Config.Settings.StatsInterval)
 	if err != nil {
 		log.Fatal().Msg(err.Error())
 	}
-
-	if pc < 20 {
-		log.Warn().Str("peer_count", fmt.Sprint(pc)).Msg("Low peer count")
-	} else {
-		log.Info().Str("peer_count", fmt.Sprint(pc)).Msg("P2P network info")
-	}
+	go em.statLoop(interval)
 
 	c := make(chan Block)
 
@@ -75,12 +70,13 @@ func (em ExecutionMonitor) Start() {
 
 	lastBlock := int64(0)
 	reset := make(chan bool)
+
 	go em.startBlockTimer(reset)
 	for block := range c {
 		tmp := block.Number.ToInt().Int64()
 		if tmp > lastBlock {
 			lastBlock = tmp
-			log.Info().Str("number", fmt.Sprint(lastBlock)).Msg("New block header received")
+			log.Info().Str("block_number", fmt.Sprint(lastBlock)).Msg("New block header received")
 			reset <- true
 		}
 	}
@@ -139,7 +135,7 @@ func (em ExecutionMonitor) startBlockTimer(reset <-chan bool) {
 			time.Sleep(time.Millisecond * 500)
 			new := time.Now()
 			if new.After(start.Add(lvls[0].Duration)) && !lvls[0].Hit {
-				em.Logger.Info().Msgf("%s since last block", lvls[0].Duration)
+				em.Logger.Warn().Msgf("%s since last block", lvls[0].Duration)
 				lvls[0].Hit = true
 			} else if new.After(start.Add(lvls[1].Duration)) && !lvls[1].Hit {
 				em.Logger.Warn().Msgf("%s since last block", lvls[1].Duration)
@@ -149,6 +145,23 @@ func (em ExecutionMonitor) startBlockTimer(reset <-chan bool) {
 				lvls[2].Hit = true
 			}
 		}
+	}
+}
+
+func (em ExecutionMonitor) statLoop(interval time.Duration) {
+	log := em.Logger
+	for {
+		pc, err := em.GetPeerCount()
+		if err != nil {
+			log.Fatal().Msg(err.Error())
+		}
+
+		if pc < 20 {
+			log.Warn().Str("peer_count", fmt.Sprint(pc)).Msg("[P2P] Low peer count")
+		} else {
+			log.Info().Str("peer_count", fmt.Sprint(pc)).Msg("[P2P] Network info")
+		}
+		time.Sleep(interval)
 	}
 }
 

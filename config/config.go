@@ -20,6 +20,7 @@ type ExecutionConfig struct {
 
 type ExecutionSettings struct {
 	BlockTimeLevels []string `yaml:"block_time_levels"`
+	StatsInterval   string   `yaml:"stats_interval"`
 }
 
 type ConsensusConfig struct {
