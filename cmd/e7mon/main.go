@@ -1,15 +1,26 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"time"
 
+	"github.com/jonasbostoen/e7mon/config"
 	"github.com/jonasbostoen/e7mon/core/monitor"
 
+	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 )
 
 func main() {
+	zerolog.TimeFieldFormat = time.RFC3339Nano
+	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "15:04:05.000"}
+	output.FormatMessage = func(i interface{}) string {
+		return fmt.Sprintf("%s", i)
+	}
+
+	log := log.Output(output)
 
 	app := &cli.App{
 		Name:  "e7mon",
@@ -38,6 +49,16 @@ func main() {
 			{
 				Name:  "init",
 				Usage: "initializes configs",
+				Action: func(c *cli.Context) error {
+					path, err := config.InitializeConfig()
+					if err != nil {
+						log.Info().Str("path", path).Msg("Config file already exists. e7mon is ready to go.")
+					} else {
+						log.Info().Str("path", path).Msg("Config file created. Ready to go.")
+					}
+
+					return nil
+				},
 			},
 		},
 	}
