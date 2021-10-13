@@ -1,0 +1,14 @@
+execution:
+  api: ws://localhost:8545
+  settings:
+    # The duration after the last received block at which to start giving warnings (3 levels),
+    # each a higher level of severity.
+    # Valid time units: "ns", "us" (or "µs"), "ms", "s", "m", "h"
+    # Examples of formats: 30s, 1m12s, 600s, 2h45m
+    block_time_levels:
+      - 10s
+      - 30s
+      - 60s
+
+consensus:
+  api: http://localhost:5002
