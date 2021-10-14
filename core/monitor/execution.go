@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/jonasbostoen/e7mon/config"
 	"github.com/ledgerwatch/erigon/common/hexutil"
 	"github.com/ledgerwatch/erigon/rpc"
@@ -23,7 +24,8 @@ func NewExecutionMonitor() *ExecutionMonitor {
 	zerolog.TimeFieldFormat = time.RFC3339Nano
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "15:04:05.000"}
 	output.FormatMessage = func(i interface{}) string {
-		return fmt.Sprintf("[EXECUTION] %s", i)
+		p := color.New(color.FgBlue).Add(color.Bold)
+		return fmt.Sprintf("[%s] %-50s", p.Sprintf("%-9s", "EXECUTION"), i)
 	}
 
 	cfg, err := config.NewConfig()
@@ -50,6 +52,9 @@ type Block struct {
 
 func (em ExecutionMonitor) Start() {
 	log := em.Logger
+
+	defer em.Client.Close()
+
 	log.Info().Str("api", em.Config.API).Msg("Starting execution client monitor")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

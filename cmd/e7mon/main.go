@@ -27,9 +27,7 @@ func main() {
 		Usage: "Monitors your Ethereum clients",
 		Action: func(c *cli.Context) error {
 			mon := monitor.NewMonitor()
-			log.Info().Str(
-				"execution_api", mon.Config.ExecutionConfig.API).Str(
-				"consensus_api", mon.Config.ConsensusConfig.API).Msg("Starting")
+			mon.Start()
 			return nil
 		},
 		Commands: []*cli.Command{
@@ -43,8 +41,13 @@ func main() {
 				},
 			},
 			{
-				Name:  "consensus",
+				Name:  "beacon",
 				Usage: "monitors the consensus client (eth2)",
+				Action: func(c *cli.Context) error {
+					mon := monitor.NewBeaconMonitor()
+					mon.Start()
+					return nil
+				},
 			},
 			{
 				Name:  "init",

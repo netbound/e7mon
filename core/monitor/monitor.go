@@ -8,7 +8,7 @@ import (
 type Monitor struct {
 	Config    *config.Config
 	Execution *ExecutionMonitor
-	Consensus *ConsensusMonitor
+	Consensus *BeaconMonitor
 }
 
 func NewMonitor() *Monitor {
@@ -18,11 +18,16 @@ func NewMonitor() *Monitor {
 	}
 
 	exec := NewExecutionMonitor()
-	consensus := NewConsensusMonitor()
+	consensus := NewBeaconMonitor()
 
 	return &Monitor{
 		Config:    cfg,
 		Execution: exec,
 		Consensus: consensus,
 	}
+}
+
+func (m Monitor) Start() {
+	go m.Execution.Start()
+	m.Consensus.Start()
 }

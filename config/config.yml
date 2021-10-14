@@ -10,5 +10,7 @@ execution:
       - 30s
       - 60s
     stats_interval: 10s
-consensus:
-  api: http://localhost:5002
+beacon:
+  api: http://localhost:5052
+validator:
+  api: 

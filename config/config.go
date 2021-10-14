@@ -23,13 +23,13 @@ type ExecutionSettings struct {
 	StatsInterval   string   `yaml:"stats_interval"`
 }
 
-type ConsensusConfig struct {
+type BeaconConfig struct {
 	API string `yaml:"api"`
 }
 
 type Config struct {
 	ExecutionConfig *ExecutionConfig `yaml:"execution"`
-	ConsensusConfig *ConsensusConfig `yaml:"consensus"`
+	BeaconConfig    *BeaconConfig    `yaml:"beacon"`
 }
 
 func NewConfig() (*Config, error) {
