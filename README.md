@@ -1,13 +1,32 @@
 # e7mon
 
-Tool for monitoring your Ethereum clients.
+Tool for monitoring your Ethereum clients. Client-agnostic as it queries the standardized JSON-RPC APIs.
 
-## Usage
-Install the binary:
+## Installation
+**With Go**
 ```bash
 go install github.com/jonasbostoen/e7mon
 ```
-Check the installation:
+## Usage
+First, generate the YAML config file. This is included in the binary and will be written to `$HOME/.config/e7mon/config.yml`.
+```bash
+e7mon init
+```
+Next up, change the config to match your settings and preferences. Important to fill out is the correct API endpoint for each client.
+
+Now run the monitor program:
+```bash
+# Monitor both clients
+e7mon
+
+# Execution client only
+e7mon execution
+
+# Beacon node only
+e7mon beacon
+```
+
+Use the help command for all the options:
 ```
 e7mon help
 
@@ -26,22 +45,9 @@ COMMANDS:
 GLOBAL OPTIONS:
    --help, -h  show help (default: false)
 ```
-Now we have to generate the configuration file. This will be at `$HOME/.config/e7mon/config.yml`.
-```bash
-e7mon init
-```
-The final step is to modify the configuration file to match your settings and preferences. After this
-you can run the program:
-```bash
-# Monitor both clients
-e7mon
 
-# Execution client only
-e7mon execution
-
-# Beacon node only
-e7mon beacon
-```
+## Example output
+![Example output](./img/output.png)
 
 ## Todo
 - [ ] Think about all the different config options
