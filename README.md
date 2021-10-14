@@ -57,8 +57,8 @@ GLOBAL OPTIONS:
 	- [ ] More generic stats
 
 - Beacon monitor
-	- [ ] Block monitor
-	- [ ] P2P stats
+	- [x] Block monitor
+	- [x] P2P stats
 	- [ ] More generic stats
 - Validator monitor
 - [ ] Write API connectors for message services

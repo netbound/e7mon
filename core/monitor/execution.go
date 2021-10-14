@@ -162,9 +162,9 @@ func (em ExecutionMonitor) statLoop(interval time.Duration) {
 		}
 
 		if pc < 20 {
-			log.Warn().Str("peer_count", fmt.Sprint(pc)).Msg("[P2P] Low peer count")
+			log.Warn().Str("connected", fmt.Sprint(pc)).Msg("[P2P] Low peer count")
 		} else {
-			log.Info().Str("peer_count", fmt.Sprint(pc)).Msg("[P2P] Network info")
+			log.Info().Str("connected", fmt.Sprint(pc)).Msg("[P2P] Network info")
 		}
 		time.Sleep(interval)
 	}
