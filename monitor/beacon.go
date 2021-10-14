@@ -2,7 +2,6 @@ package monitor
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	web "net/http"
@@ -165,15 +164,6 @@ func (bm BeaconMonitor) statLoop(interval time.Duration) {
 	}
 }
 
-type PeerCountResponse struct {
-	Connected     string `json:"connected"`
-	Connecting    string `json:"connecting"`
-	Disconnected  string `json:"disconnected"`
-	Disconnecting string `json:"disconnecting"`
-}
-
-var pcResponse PeerCountResponse
-
 func (bm BeaconMonitor) GetPeerCount() (int, int, int, int, error) {
 	req, err := web.NewRequest("GET", bm.Config.API+"/eth/v1/node/peer_count", nil)
 	if err != nil {
@@ -186,16 +176,12 @@ func (bm BeaconMonitor) GetPeerCount() (int, int, int, int, error) {
 	}
 	defer res.Body.Close()
 	body, _ := io.ReadAll(res.Body)
-	data := gjson.GetBytes(body, "data")
-	err = json.Unmarshal([]byte(data.String()), &pcResponse)
-	if err != nil {
-		bm.Logger.Fatal().Msg(err.Error())
-	}
+	data := gjson.GetManyBytes(body, "data.connected", "data.connecting", "data.disconnected", "data.disconnecting")
 
-	connected, _ := strconv.Atoi(pcResponse.Connected)
-	connecting, _ := strconv.Atoi(pcResponse.Connecting)
-	disconnected, _ := strconv.Atoi(pcResponse.Disconnected)
-	disconnecting, _ := strconv.Atoi(pcResponse.Disconnecting)
+	connected, _ := strconv.Atoi(data[0].String())
+	connecting, _ := strconv.Atoi(data[1].String())
+	disconnected, _ := strconv.Atoi(data[2].String())
+	disconnecting, _ := strconv.Atoi(data[3].String())
 
 	return connected, connecting, disconnected, disconnecting, nil
 }

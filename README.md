@@ -1,6 +1,9 @@
 # e7mon
 
 Tool for monitoring your Ethereum clients. Client-agnostic as it queries the standardized JSON-RPC APIs.
+However, the execution client should be started with the following APIs exposed:
+* `eth`
+* `net`
 
 ## Installation
 **With Go**
@@ -47,7 +50,7 @@ GLOBAL OPTIONS:
 ```
 
 ## Example output
-![Example output](./img/output.png)
+![Example output](./docs/img/output.png)
 
 ## Todo
 - [ ] Think about all the different config options
@@ -61,6 +64,9 @@ GLOBAL OPTIONS:
 	- [x] P2P stats
 	- [ ] More generic stats
 - Validator monitor
+   - [ ] Produced blocks
+   - [ ] Validator stats
+- [ ] Implement verbosity levels
 - [ ] Write API connectors for message services
 
 Sources:
