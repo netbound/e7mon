@@ -32,24 +32,6 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			{
-				Name:  "execution",
-				Usage: "monitors the execution client (eth1)",
-				Action: func(c *cli.Context) error {
-					mon := monitor.NewExecutionMonitor()
-					mon.Start()
-					return nil
-				},
-			},
-			{
-				Name:  "beacon",
-				Usage: "monitors the consensus client (eth2)",
-				Action: func(c *cli.Context) error {
-					mon := monitor.NewBeaconMonitor()
-					mon.Start()
-					return nil
-				},
-			},
-			{
 				Name:  "init",
 				Usage: "initializes configs",
 				Action: func(c *cli.Context) error {
@@ -60,6 +42,24 @@ func main() {
 						log.Info().Str("path", path).Msg("Config file created. Ready to go.")
 					}
 
+					return nil
+				},
+			},
+			{
+				Name:  "execution",
+				Usage: "monitors the execution client (eth1)",
+				Action: func(c *cli.Context) error {
+					mon := monitor.NewExecutionMonitor()
+					mon.Start()
+					return nil
+				},
+			},
+			{
+				Name:  "beacon",
+				Usage: "monitors the beacon node (eth2)",
+				Action: func(c *cli.Context) error {
+					mon := monitor.NewBeaconMonitor()
+					mon.Start()
 					return nil
 				},
 			},
