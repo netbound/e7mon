@@ -14,17 +14,18 @@ import (
 var cfg []byte
 
 type ExecutionConfig struct {
-	API      string            `yaml:"api"`
-	Settings ExecutionSettings `yaml:"settings"`
+	API      string   `yaml:"api"`
+	Settings Settings `yaml:"settings"`
 }
 
-type ExecutionSettings struct {
+type Settings struct {
 	BlockTimeLevels []string `yaml:"block_time_levels"`
 	StatsInterval   string   `yaml:"stats_interval"`
 }
 
 type BeaconConfig struct {
-	API string `yaml:"api"`
+	API      string   `yaml:"api"`
+	Settings Settings `yaml:"settings"`
 }
 
 type Config struct {

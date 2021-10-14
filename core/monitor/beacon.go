@@ -2,8 +2,12 @@ package monitor
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
+	web "net/http"
 	"os"
+	"strconv"
 	"time"
 
 	eth2client "github.com/attestantio/go-eth2-client"
@@ -13,6 +17,7 @@ import (
 	"github.com/jonasbostoen/e7mon/config"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
+	"github.com/tidwall/gjson"
 )
 
 type BeaconMonitor struct {
@@ -67,9 +72,70 @@ func (bm BeaconMonitor) Start() {
 		}
 	}
 
-	select {}
+	interval, err := time.ParseDuration(bm.Config.Settings.StatsInterval)
+	if err != nil {
+		log.Fatal().Msg(err.Error())
+	}
+	bm.statLoop(interval)
 }
 
 func (bm BeaconMonitor) NewBlockHandler(block *api.Event) {
 	bm.Logger.Info().Str("slot", fmt.Sprint(block.Data.(*api.BlockEvent).Slot)).Msg("New block received")
+}
+
+func (bm BeaconMonitor) statLoop(interval time.Duration) {
+	log := bm.Logger
+	for {
+		connected, connecting, disconnected, disconnecting, err := bm.GetPeerCount()
+		if err != nil {
+			log.Fatal().Msg(err.Error())
+		}
+
+		if connected < 20 {
+			log.Warn().Str("peer_count", fmt.Sprint(connected)).Msg("[P2P] Low peer count")
+		} else {
+			log.Info().Str(
+				"connected", fmt.Sprint(connected)).Str(
+				"connecting", fmt.Sprint(connecting)).Str(
+				"disconnected", fmt.Sprint(disconnected)).Str(
+				"disconnecting", fmt.Sprint(disconnecting)).Msg("[P2P] Network info")
+
+		}
+		time.Sleep(interval)
+	}
+}
+
+type PeerCountResponse struct {
+	Connected     string `json:"connected"`
+	Connecting    string `json:"connecting"`
+	Disconnected  string `json:"disconnected"`
+	Disconnecting string `json:"disconnecting"`
+}
+
+var pcResponse PeerCountResponse
+
+func (bm BeaconMonitor) GetPeerCount() (int, int, int, int, error) {
+	req, err := web.NewRequest("GET", bm.Config.API+"/eth/v1/node/peer_count", nil)
+	if err != nil {
+		bm.Logger.Fatal().Msg(err.Error())
+	}
+	req.Header.Set("Accept", "application/json")
+	res, err := web.DefaultClient.Do(req)
+	if err != nil {
+		bm.Logger.Fatal().Msg(err.Error())
+	}
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+	data := gjson.GetBytes(body, "data")
+	err = json.Unmarshal([]byte(data.String()), &pcResponse)
+	if err != nil {
+		bm.Logger.Fatal().Msg(err.Error())
+	}
+
+	connected, _ := strconv.Atoi(pcResponse.Connected)
+	connecting, _ := strconv.Atoi(pcResponse.Connecting)
+	disconnected, _ := strconv.Atoi(pcResponse.Disconnected)
+	disconnecting, _ := strconv.Atoi(pcResponse.Disconnecting)
+
+	return connected, connecting, disconnected, disconnecting, nil
 }
