@@ -71,4 +71,5 @@ GLOBAL OPTIONS:
 
 Sources:
 * https://ethereum.github.io/beacon-APIs/#/
+* https://geth.ethereum.org/docs/rpc/server
 * https://github.com/attestantio/go-eth2-client

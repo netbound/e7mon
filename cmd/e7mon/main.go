@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/jonasbostoen/e7mon/config"
-	"github.com/jonasbostoen/e7mon/core/monitor"
+	"github.com/jonasbostoen/e7mon/monitor"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
