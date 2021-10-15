@@ -9,7 +9,7 @@ However, the execution client should be started with the following APIs exposed:
 ## Installation
 **With Go**
 ```bash
-go install github.com/jonasbostoen/e7mon
+go install github.com/eth-tools/e7mon
 ```
 ## Usage
 First, generate the YAML config file. This is included in the binary and will be written to `$HOME/.config/e7mon/config.yml`.
