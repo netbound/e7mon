@@ -1,7 +1,7 @@
 # .github/workflows/release.yml
 
 on:
-  push:
+  create:
     tags:
       - 'v*'
 name: Build Release
