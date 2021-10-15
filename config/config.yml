@@ -1,4 +1,5 @@
 execution:
+  # Needs websockets for subscriptions
   api: ws://localhost:8545
   settings:
     # The duration after the last received block at which to start giving warnings (3 levels),

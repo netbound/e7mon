@@ -55,7 +55,11 @@ func (em ExecutionMonitor) Start() {
 
 	defer em.Client.Close()
 
-	log.Info().Str("api", em.Config.API).Msg("Starting execution client monitor")
+	ver, err := em.GetNodeVersion()
+	if err != nil {
+		log.Error().Msg(err.Error())
+	}
+	log.Info().Str("api", em.Config.API).Str("node_version", ver).Msg("Starting execution client monitor")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
@@ -182,4 +186,15 @@ func (em ExecutionMonitor) GetPeerCount() (uint64, error) {
 	}
 
 	return peerCount.ToInt().Uint64(), nil
+}
+
+func (em ExecutionMonitor) GetNodeVersion() (version string, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	err = em.Client.CallContext(ctx, &version, "web3_clientVersion")
+	if err != nil {
+		return
+	}
+	return
 }

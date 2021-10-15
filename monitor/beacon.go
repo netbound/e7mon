@@ -65,7 +65,11 @@ func (bm BeaconMonitor) Start() {
 	reset := make(chan bool)
 	bm.Reset = reset
 
-	bm.Logger.Info().Str("api", bm.Config.API).Msg("Starting beacon node monitor")
+	ver, err := bm.GetNodeVersion()
+	if err != nil {
+		log.Fatal().Msg(err.Error())
+	}
+	bm.Logger.Info().Str("api", bm.Config.API).Str("node_version", ver).Msg("Starting beacon node monitor")
 	// For events: no ws necessary, this API uses server streamed events (SSE)
 	// https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
 	if provider, isProvider := bm.Client.(eth2client.EventsProvider); isProvider {
@@ -165,12 +169,7 @@ func (bm BeaconMonitor) statLoop(interval time.Duration) {
 }
 
 func (bm BeaconMonitor) GetPeerCount() (int, int, int, int, error) {
-	req, err := web.NewRequest("GET", bm.Config.API+"/eth/v1/node/peer_count", nil)
-	if err != nil {
-		bm.Logger.Fatal().Msg(err.Error())
-	}
-	req.Header.Set("Accept", "application/json")
-	res, err := web.DefaultClient.Do(req)
+	res, err := web.Get(bm.Config.API + "/eth/v1/node/peer_count")
 	if err != nil {
 		bm.Logger.Fatal().Msg(err.Error())
 	}
@@ -184,4 +183,14 @@ func (bm BeaconMonitor) GetPeerCount() (int, int, int, int, error) {
 	disconnecting, _ := strconv.Atoi(data[3].String())
 
 	return connected, connecting, disconnected, disconnecting, nil
+}
+
+func (bm BeaconMonitor) GetNodeVersion() (string, error) {
+	res, err := web.Get(bm.Config.API + "/eth/v1/node/version")
+	if err != nil {
+		bm.Logger.Fatal().Msg(err.Error())
+	}
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+	return gjson.GetBytes(body, "data.version").String(), nil
 }
