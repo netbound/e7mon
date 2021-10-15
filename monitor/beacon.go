@@ -19,6 +19,10 @@ import (
 	"github.com/tidwall/gjson"
 )
 
+const (
+	SLOTS_PER_EPOCH = 32
+)
+
 type BeaconMonitor struct {
 	Config *config.BeaconConfig
 	Client eth2client.Service
@@ -76,20 +80,22 @@ func (bm BeaconMonitor) Start() {
 		go bm.startBlockTimer()
 		err := provider.Events(ctx, []string{"block"}, bm.NewBlockHandler)
 		if err != nil {
-			log.Fatal().Msg(err.Error())
+			log.Fatal().Err(err).Msg("")
 		}
 	}
 
 	interval, err := time.ParseDuration(bm.Config.Settings.StatsInterval)
 	if err != nil {
-		log.Fatal().Msg(err.Error())
+		log.Fatal().Err(err).Msg("")
 	}
 
 	bm.statLoop(interval)
 }
 
-func (bm BeaconMonitor) NewBlockHandler(block *api.Event) {
-	bm.Logger.Info().Str("slot", fmt.Sprint(block.Data.(*api.BlockEvent).Slot)).Msg("New block received")
+func (bm BeaconMonitor) NewBlockHandler(event *api.Event) {
+	block := event.Data.(*api.BlockEvent)
+	// TODO: get the target epoch for this block
+	bm.Logger.Info().Int("epoch", int(block.Slot/SLOTS_PER_EPOCH)).Str("slot", fmt.Sprint(block.Slot)).Msg("New block received")
 	bm.Reset <- true
 }
 
@@ -98,15 +104,15 @@ func (bm BeaconMonitor) startBlockTimer() {
 
 	lvl1, err := time.ParseDuration(bm.Config.Settings.BlockTimeLevels[0])
 	if err != nil {
-		log.Fatal().Msg(err.Error())
+		log.Fatal().Err(err).Msg("")
 	}
 	lvl2, err := time.ParseDuration(bm.Config.Settings.BlockTimeLevels[1])
 	if err != nil {
-		log.Fatal().Msg(err.Error())
+		log.Fatal().Err(err).Msg("")
 	}
 	lvl3, err := time.ParseDuration(bm.Config.Settings.BlockTimeLevels[2])
 	if err != nil {
-		log.Fatal().Msg(err.Error())
+		log.Fatal().Err(err).Msg("")
 	}
 
 	var lvls BlockTimeLevels = [3]*BlockTimeLevel{
@@ -151,17 +157,17 @@ func (bm BeaconMonitor) statLoop(interval time.Duration) {
 	for {
 		connected, connecting, disconnected, disconnecting, err := bm.GetPeerCount()
 		if err != nil {
-			log.Fatal().Msg(err.Error())
+			log.Fatal().Err(err).Msg("")
 		}
 
 		if connected < 20 {
-			log.Warn().Str("peer_count", fmt.Sprint(connected)).Msg("[P2P] Low peer count")
+			log.Warn().Int("peer_count", connected).Msg("[P2P] Low peer count")
 		} else {
-			log.Info().Str(
-				"connected", fmt.Sprint(connected)).Str(
-				"connecting", fmt.Sprint(connecting)).Str(
-				"disconnected", fmt.Sprint(disconnected)).Str(
-				"disconnecting", fmt.Sprint(disconnecting)).Msg("[P2P] Network info")
+			log.Info().Int(
+				"connected", connected).Int(
+				"connecting", connecting).Int(
+				"disconnected", disconnected).Int(
+				"disconnecting", disconnecting).Msg("[P2P] Network info")
 
 		}
 		time.Sleep(interval)
@@ -171,7 +177,7 @@ func (bm BeaconMonitor) statLoop(interval time.Duration) {
 func (bm BeaconMonitor) GetPeerCount() (int, int, int, int, error) {
 	res, err := web.Get(bm.Config.API + "/eth/v1/node/peer_count")
 	if err != nil {
-		bm.Logger.Fatal().Msg(err.Error())
+		bm.Logger.Fatal().Err(err).Msg("")
 	}
 	defer res.Body.Close()
 	body, _ := io.ReadAll(res.Body)
@@ -185,12 +191,24 @@ func (bm BeaconMonitor) GetPeerCount() (int, int, int, int, error) {
 	return connected, connecting, disconnected, disconnecting, nil
 }
 
+// GetNodeVersion returns the node version.
 func (bm BeaconMonitor) GetNodeVersion() (string, error) {
 	res, err := web.Get(bm.Config.API + "/eth/v1/node/version")
 	if err != nil {
-		bm.Logger.Fatal().Msg(err.Error())
+		return "", nil
 	}
 	defer res.Body.Close()
 	body, _ := io.ReadAll(res.Body)
 	return gjson.GetBytes(body, "data.version").String(), nil
+}
+
+// GetFinalityCheckpoints returns the finality checkpoints as a JSON string.
+func (bm BeaconMonitor) GetFinalityCheckpoints() (string, error) {
+	res, err := web.Get(bm.Config.API + "/eth/v1/beacon/states/head/finality_checkpoints")
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+	return gjson.GetBytes(body, "data").String(), nil
 }

@@ -2,8 +2,9 @@
 
 Tool for monitoring your Ethereum clients. Client-agnostic as it queries the standardized JSON-RPC APIs.
 However, the execution client should be started with the following APIs exposed:
-* `eth`
-* `net`
+* `eth`: querying the chain
+* `net`: getting P2P stats
+* `web3`: client information
 
 ## Installation
 **With Go**
@@ -54,6 +55,8 @@ GLOBAL OPTIONS:
 
 ## Todo
 - [ ] Think about all the different config options
+* Finalized checkpoints
+* Attestations
 - Execution monitor
 	- [x] Block monitor
 	- [x] P2P stats
@@ -72,4 +75,7 @@ GLOBAL OPTIONS:
 Sources:
 * https://ethereum.github.io/beacon-APIs/#/
 * https://geth.ethereum.org/docs/rpc/server
+* https://notes.ethereum.org/@serenity/handbook
+* https://github.com/ethereum/consensus-specs
+* https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md
 * https://github.com/attestantio/go-eth2-client

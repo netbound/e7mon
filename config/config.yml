@@ -7,19 +7,19 @@ execution:
     # Valid time units: "ns", "us" (or "µs"), "ms", "s", "m", "h"
     # Examples of formats: 30s, 1m12s, 600s, 2h45m
     block_time_levels:
-      - 10s
       - 30s
-      - 60s
-    stats_interval: 10s
+      - 1m
+      - 2m
+    stats_interval: 30s
 beacon:
   api: http://localhost:5052
   settings:
     # Valid time units: "ns", "us" (or "µs"), "ms", "s", "m", "h"
     # Examples of formats: 30s, 1m12s, 600s, 2h45m
     block_time_levels:
-      - 10s
       - 30s
-      - 60s
-    stats_interval: 10s
+      - 1m
+      - 2m
+    stats_interval: 30s
 validator:
   api: 
