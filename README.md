@@ -6,6 +6,8 @@ However, the execution client should be started with the following APIs exposed:
 * `net`: getting P2P stats
 * `web3`: client information
 
+<img src="./docs/img/output.png" width=1200>
+
 ## Installation
 **With Go**
 ```bash
@@ -49,9 +51,6 @@ COMMANDS:
 GLOBAL OPTIONS:
    --help, -h  show help (default: false)
 ```
-
-## Example output
-![Example output](./docs/img/output.png)
 
 ## Todo
 - [ ] Think about all the different config options
