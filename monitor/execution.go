@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/fatih/color"
 	"github.com/jonasbostoen/e7mon/config"
-	"github.com/ledgerwatch/erigon/common/hexutil"
-	"github.com/ledgerwatch/erigon/rpc"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -25,7 +25,7 @@ func NewExecutionMonitor() *ExecutionMonitor {
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "15:04:05.000"}
 	output.FormatMessage = func(i interface{}) string {
 		p := color.New(color.FgBlue).Add(color.Bold)
-		return fmt.Sprintf("[%s] %-50s", p.Sprintf("%-9s", "EXECUTION"), i)
+		return fmt.Sprintf("| %s | %-50s", p.Sprintf("%-9s", "EXECUTION"), i)
 	}
 
 	cfg, err := config.NewConfig()

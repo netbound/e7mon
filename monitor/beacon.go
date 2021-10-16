@@ -35,7 +35,7 @@ func NewBeaconMonitor() *BeaconMonitor {
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "15:04:05.000"}
 	output.FormatMessage = func(i interface{}) string {
 		p := color.New(color.FgMagenta).Add(color.Bold)
-		return fmt.Sprintf("[%s] %-50s", p.Sprintf("%-9s", " BEACON"), i)
+		return fmt.Sprintf("| %s | %-50s", p.Sprintf("%-9s", "BEACON"), i)
 	}
 
 	cfg, err := config.NewConfig()
@@ -92,11 +92,20 @@ func (bm BeaconMonitor) Start() {
 	bm.statLoop(interval)
 }
 
+var last time.Time = time.Time{}
+
 func (bm BeaconMonitor) NewBlockHandler(event *api.Event) {
 	block := event.Data.(*api.BlockEvent)
-	// TODO: get the target epoch for this block
-	bm.Logger.Info().Int("epoch", int(block.Slot/SLOTS_PER_EPOCH)).Str("slot", fmt.Sprint(block.Slot)).Msg("New block received")
+	var dur time.Duration
+	if (last == time.Time{}) {
+		dur, _ = time.ParseDuration("0s")
+	} else {
+		dur = time.Since(last).Round(time.Millisecond)
+	}
+
+	bm.Logger.Info().Int("epoch", int(block.Slot/SLOTS_PER_EPOCH)).Str("slot", fmt.Sprint(block.Slot)).Str("last", dur.String()).Msg("New block received")
 	bm.Reset <- true
+	last = time.Now()
 }
 
 func (bm BeaconMonitor) startBlockTimer() {

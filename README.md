@@ -59,11 +59,13 @@ GLOBAL OPTIONS:
 - Execution monitor
 	- [x] Block monitor
 	- [x] P2P stats
+      - [ ] Peers avg latency
 	- [ ] More generic stats
 
 - Beacon monitor
 	- [x] Block monitor
 	- [x] P2P stats
+      - [ ] Peers avg latency
 	- [ ] More generic stats
 - Validator monitor
    - [ ] Produced blocks
@@ -77,4 +79,5 @@ Sources:
 * https://notes.ethereum.org/@serenity/handbook
 * https://github.com/ethereum/consensus-specs
 * https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md
+* https://github.com/grahamking/latency
 * https://github.com/attestantio/go-eth2-client
