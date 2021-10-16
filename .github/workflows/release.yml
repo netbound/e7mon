@@ -18,6 +18,7 @@ jobs:
         GOARCH: amd64
         GOOS: linux
         CMD_PATH: ./cmd/e7mon
+        PROJECT_NAME: e7mon
         GO111MODULE: on
   release-linux-arm64:
     name: release linux/amd64
@@ -31,6 +32,7 @@ jobs:
         GOARCH: arm64
         GOOS: linux
         CMD_PATH: ./cmd/e7mon
+        PROJECT_NAME: e7mon
         GO111MODULE: on
   release-darwin-amd64:
     name: release darwin/amd64
@@ -44,6 +46,7 @@ jobs:
         GOARCH: amd64
         GO111MODULE: on
         GOOS: darwin
+        PROJECT_NAME: e7mon
         CMD_PATH: ./cmd/e7mon
   release-windows-amd64:
     name: release windows/amd64
@@ -57,4 +60,5 @@ jobs:
         GOARCH: amd64
         GOOS: windows
         CMD_PATH: ./cmd/e7mon
+        PROJECT_NAME: e7mon
         GO111MODULE: on
