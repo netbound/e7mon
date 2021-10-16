@@ -18,6 +18,7 @@ jobs:
         GOARCH: amd64
         GOOS: linux
         EXTRA_FILES: "README"
+        GO111MODULE: on
   release-linux-arm64:
     name: release linux/amd64
     runs-on: ubuntu-latest
@@ -30,6 +31,7 @@ jobs:
         GOARCH: arm64
         GOOS: linux
         EXTRA_FILES: "README"
+        GO111MODULE: on
   release-darwin-amd64:
     name: release darwin/amd64
     runs-on: ubuntu-latest
@@ -40,6 +42,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         GOARCH: amd64
+        GO111MODULE: on
         GOOS: darwin
         EXTRA_FILES: "README"
   release-windows-amd64:
@@ -54,3 +57,4 @@ jobs:
         GOARCH: amd64
         GOOS: windows
         EXTRA_FILES: "README"
+        GO111MODULE: on

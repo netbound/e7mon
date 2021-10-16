@@ -6,10 +6,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/eth-tools/e7mon/config"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/fatih/color"
-	"github.com/jonasbostoen/e7mon/config"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
