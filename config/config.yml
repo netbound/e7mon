@@ -10,7 +10,10 @@ execution:
       - 30s
       - 1m
       - 2m
-    stats_interval: 30s
+    stats:
+      interval: 30s
+      topics:
+        - p2p
 beacon:
   api: http://localhost:5052
   settings:
@@ -20,6 +23,21 @@ beacon:
       - 30s
       - 1m
       - 2m
-    stats_interval: 30s
+    stats: 
+      interval: 30s
+      topics:
+        - p2p
 validator:
   api: 
+  settings:
+    stats:
+      interval: 1m
+      topics:
+        - validator_uptime
+
+# Stats configuration. These are all the possible stats to subscribe to.
+stats: 
+  - id: p2p
+    # Enable latency checks. This will send out SYN packets to connected peers
+    # to measure latency.
+    latency: true

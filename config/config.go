@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"time"
 
 	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v2"
@@ -19,8 +20,13 @@ type ExecutionConfig struct {
 }
 
 type Settings struct {
-	BlockTimeLevels []string `yaml:"block_time_levels"`
-	StatsInterval   string   `yaml:"stats_interval"`
+	BlockTimeLevels []string     `yaml:"block_time_levels"`
+	StatsConfig     *StatsConfig `yaml:"stats"`
+}
+
+type StatsConfig struct {
+	Interval time.Duration `yaml:"interval"`
+	Topics   []string      `yaml:"topics"`
 }
 
 type BeaconConfig struct {
@@ -31,6 +37,12 @@ type BeaconConfig struct {
 type Config struct {
 	ExecutionConfig *ExecutionConfig `yaml:"execution"`
 	BeaconConfig    *BeaconConfig    `yaml:"beacon"`
+	StatsConfig     []Stat           `yaml:"stats"`
+}
+
+type Stat struct {
+	ID      string `yaml:"id"`
+	Latency bool   `yaml:"latency,omitempty"`
 }
 
 func NewConfig() (*Config, error) {
@@ -51,6 +63,7 @@ func NewConfig() (*Config, error) {
 	if err != nil {
 		log.Fatal().Msg(err.Error())
 	}
+
 	return &c, nil
 }
 

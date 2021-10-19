@@ -16,6 +16,7 @@ import (
 
 type ExecutionMonitor struct {
 	Config *config.ExecutionConfig
+	Stats  []config.Stat
 	Client *rpc.Client
 	Logger zerolog.Logger
 }
@@ -41,6 +42,7 @@ func NewExecutionMonitor() *ExecutionMonitor {
 
 	return &ExecutionMonitor{
 		Config: cfg.ExecutionConfig,
+		Stats:  cfg.StatsConfig,
 		Client: client,
 		Logger: log.Output(output),
 	}
@@ -64,11 +66,11 @@ func (em ExecutionMonitor) Start() {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	interval, err := time.ParseDuration(em.Config.Settings.StatsInterval)
+	topics, err := parseTopics(em.Stats, em.Config.Settings.StatsConfig.Topics...)
 	if err != nil {
 		log.Fatal().Msg(err.Error())
 	}
-	go em.statLoop(interval)
+	go em.statLoop(em.Config.Settings.StatsConfig.Interval, topics)
 
 	c := make(chan Block)
 
@@ -85,7 +87,7 @@ func (em ExecutionMonitor) Start() {
 		tmp := block.Number.ToInt().Int64()
 		if tmp > lastBlock {
 			lastBlock = tmp
-			log.Info().Str("block_number", fmt.Sprint(lastBlock)).Msg("New block header received")
+			log.Info().Int64("block_number", lastBlock).Msg("New block header received")
 			reset <- true
 		}
 	}
@@ -106,6 +108,7 @@ func (l BlockTimeLevels) Reset() {
 
 func (em ExecutionMonitor) startBlockTimer(reset <-chan bool) {
 	start := time.Now()
+	log := em.Logger
 
 	lvl1, err := time.ParseDuration(em.Config.Settings.BlockTimeLevels[0])
 	if err != nil {
@@ -144,32 +147,79 @@ func (em ExecutionMonitor) startBlockTimer(reset <-chan bool) {
 			time.Sleep(time.Millisecond * 500)
 			new := time.Now()
 			if new.After(start.Add(lvls[0].Duration)) && !lvls[0].Hit {
-				em.Logger.Warn().Msgf("%s since last block", lvls[0].Duration)
+				log.Warn().Msgf("%s since last block", lvls[0].Duration)
 				lvls[0].Hit = true
 			} else if new.After(start.Add(lvls[1].Duration)) && !lvls[1].Hit {
-				em.Logger.Warn().Msgf("%s since last block", lvls[1].Duration)
+				log.Warn().Msgf("%s since last block", lvls[1].Duration)
 				lvls[1].Hit = true
 			} else if new.After(start.Add(lvls[2].Duration)) && !lvls[2].Hit {
-				em.Logger.Warn().Msgf("%s since last block", lvls[2].Duration)
+				log.Warn().Msgf("%s since last block", lvls[2].Duration)
 				lvls[2].Hit = true
 			}
 		}
 	}
 }
 
-func (em ExecutionMonitor) statLoop(interval time.Duration) {
+// TODO
+func parseTopics(stats []config.Stat, topics ...string) (map[string]interface{}, error) {
+	m := make(map[string]interface{})
+	for _, topic := range topics {
+		for _, stat := range stats {
+			if stat.ID == topic {
+				m[topic] = stat
+				continue
+			}
+
+			return nil, fmt.Errorf("topic %s does not exist", topic)
+		}
+	}
+
+	return m, nil
+}
+
+func getKeys(m map[string]interface{}) []string {
+	keys := make([]string, len(m))
+
+	i := 0
+	for k := range m {
+		keys[i] = k
+		i++
+	}
+
+	return keys
+}
+
+func (em ExecutionMonitor) statLoop(interval time.Duration, topics map[string]interface{}) {
+	// No args
 	log := em.Logger
+
+	if len(topics) == 0 {
+		log.Info().Msg("No topics provided")
+		return
+	}
+
+	log.Info().Strs("topics", getKeys(topics)).Msg("Subscribed to topics")
+
 	for {
-		pc, err := em.GetPeerCount()
-		if err != nil {
-			log.Fatal().Msg(err.Error())
+		if settings, ok := topics["p2p"]; ok {
+			pc, err := em.GetPeerCount()
+			if err != nil {
+				log.Fatal().Msg(err.Error())
+			}
+
+			if pc < 20 {
+				log.Warn().Str("connected", fmt.Sprint(pc)).Msg("[P2P] Low peer count")
+			} else {
+				log.Info().Str("connected", fmt.Sprint(pc)).Msg("[P2P] Network info")
+			}
+
+			if s, ok := settings.(config.Stat); ok {
+				if s.Latency {
+					// do latency check
+				}
+			}
 		}
 
-		if pc < 20 {
-			log.Warn().Str("connected", fmt.Sprint(pc)).Msg("[P2P] Low peer count")
-		} else {
-			log.Info().Str("connected", fmt.Sprint(pc)).Msg("[P2P] Network info")
-		}
 		time.Sleep(interval)
 	}
 }

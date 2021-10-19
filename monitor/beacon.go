@@ -84,12 +84,7 @@ func (bm BeaconMonitor) Start() {
 		}
 	}
 
-	interval, err := time.ParseDuration(bm.Config.Settings.StatsInterval)
-	if err != nil {
-		log.Fatal().Err(err).Msg("")
-	}
-
-	bm.statLoop(interval)
+	bm.statLoop(bm.Config.Settings.StatsConfig.Interval)
 }
 
 var last time.Time = time.Time{}
