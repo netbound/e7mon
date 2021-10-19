@@ -9,10 +9,13 @@ However, the execution client should be started with the following APIs exposed:
 <img src="./docs/img/output.png" width=1200>
 
 ## Installation
-**With Go**
+**From source**
 ```bash
-go install github.com/eth-tools/e7mon
+git clone https://github.com/eth-tools/e7mon
+cd e7mon
+make install
 ```
+This will put the binary in $GOBIN, which is in your PATH.
 ## Usage
 First, generate the YAML config file. This is included in the binary and will be written to `$HOME/.config/e7mon/config.yml`.
 ```bash
