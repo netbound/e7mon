@@ -3,7 +3,8 @@
 on:   
   push:
     tags:
-      - 'v*'
+      - v*
+
 name: Build Release
 jobs:
   release-linux-amd64:
