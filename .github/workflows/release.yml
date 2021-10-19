@@ -1,9 +1,9 @@
 # .github/workflows/release.yml
 
-on: push
-  # push:
-  #   tags:
-  #     - 'v*'
+on:   
+  push:
+    tags:
+      - 'v*'
 name: Build Release
 jobs:
   release-linux-amd64:

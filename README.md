@@ -74,6 +74,7 @@ GLOBAL OPTIONS:
    - [ ] Produced blocks
    - [ ] Validator stats
 - [ ] Implement verbosity levels
+- [ ] Integrate with beaconcha.in
 - [ ] Write API connectors for message services
 
 Sources:
