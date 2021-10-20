@@ -9,8 +9,8 @@ require (
 	github.com/ethereum/go-ethereum v1.10.10
 	github.com/fatih/color v1.13.0
 	github.com/go-stack/stack v1.8.1 // indirect
-	github.com/google/gopacket v1.1.19 // indirect
-	github.com/mdlayher/arp v0.0.0-20191213142603-f72070a231fc // indirect
+	github.com/google/gopacket v1.1.19
+	github.com/mdlayher/arp v0.0.0-20191213142603-f72070a231fc
 	github.com/rs/zerolog v1.25.0
 	github.com/tidwall/gjson v1.9.4
 	github.com/tklauser/go-sysconf v0.3.9 // indirect
