@@ -33,7 +33,6 @@ validator:
     stats:
       interval: 1m
       topics:
-        - validator_uptime
 
 # Stats configuration. These are all the possible stats to subscribe to.
 stats: 

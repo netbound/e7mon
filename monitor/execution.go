@@ -87,7 +87,7 @@ func (em ExecutionMonitor) Start() {
 		tmp := block.Number.ToInt().Int64()
 		if tmp > lastBlock {
 			lastBlock = tmp
-			log.Info().Int64("block_number", lastBlock).Msg("New block header received")
+			log.Info().Int64("block_number", lastBlock).Msg("New execution block")
 			reset <- true
 		}
 	}
@@ -160,7 +160,6 @@ func (em ExecutionMonitor) startBlockTimer(reset <-chan bool) {
 	}
 }
 
-// TODO
 func parseTopics(stats []config.Stat, topics ...string) (map[string]interface{}, error) {
 	m := make(map[string]interface{})
 	for _, topic := range topics {
@@ -170,7 +169,7 @@ func parseTopics(stats []config.Stat, topics ...string) (map[string]interface{},
 				continue
 			}
 
-			return nil, fmt.Errorf("topic %s does not exist", topic)
+			return nil, fmt.Errorf("topic '%s' does not exist", topic)
 		}
 	}
 
@@ -190,9 +189,9 @@ func getKeys(m map[string]interface{}) []string {
 }
 
 func (em ExecutionMonitor) statLoop(interval time.Duration, topics map[string]interface{}) {
-	// No args
 	log := em.Logger
 
+	// No args
 	if len(topics) == 0 {
 		log.Info().Msg("No topics provided")
 		return
@@ -213,10 +212,9 @@ func (em ExecutionMonitor) statLoop(interval time.Duration, topics map[string]in
 				log.Info().Str("connected", fmt.Sprint(pc)).Msg("[P2P] Network info")
 			}
 
-			if s, ok := settings.(config.Stat); ok {
-				if s.Latency {
-					// do latency check
-				}
+			if settings.(config.Stat).Latency {
+				// TODO
+				// do latency check
 			}
 		}
 
@@ -224,6 +222,7 @@ func (em ExecutionMonitor) statLoop(interval time.Duration, topics map[string]in
 	}
 }
 
+// TODO: replace this with geth ethclient
 func (em ExecutionMonitor) GetPeerCount() (uint64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

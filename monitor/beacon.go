@@ -26,6 +26,7 @@ const (
 type BeaconMonitor struct {
 	Config *config.BeaconConfig
 	Client eth2client.Service
+	Stats  []config.Stat
 	Logger zerolog.Logger
 	Reset  chan bool
 }
@@ -58,6 +59,7 @@ func NewBeaconMonitor() *BeaconMonitor {
 	return &BeaconMonitor{
 		Config: cfg.BeaconConfig,
 		Logger: log.Output(output),
+		Stats:  cfg.StatsConfig,
 		Client: client,
 	}
 }
@@ -74,6 +76,7 @@ func (bm BeaconMonitor) Start() {
 		log.Fatal().Msg(err.Error())
 	}
 	bm.Logger.Info().Str("api", bm.Config.API).Str("node_version", ver).Msg("Starting beacon node monitor")
+
 	// For events: no ws necessary, this API uses server streamed events (SSE)
 	// https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
 	if provider, isProvider := bm.Client.(eth2client.EventsProvider); isProvider {
@@ -84,7 +87,12 @@ func (bm BeaconMonitor) Start() {
 		}
 	}
 
-	bm.statLoop(bm.Config.Settings.StatsConfig.Interval)
+	topics, err := parseTopics(bm.Stats, bm.Config.Settings.StatsConfig.Topics...)
+	if err != nil {
+		log.Fatal().Msg(err.Error())
+	}
+
+	bm.statLoop(bm.Config.Settings.StatsConfig.Interval, topics)
 }
 
 var last time.Time = time.Time{}
@@ -98,7 +106,7 @@ func (bm BeaconMonitor) NewBlockHandler(event *api.Event) {
 		dur = time.Since(last).Round(time.Millisecond)
 	}
 
-	bm.Logger.Info().Int("epoch", int(block.Slot/SLOTS_PER_EPOCH)).Str("slot", fmt.Sprint(block.Slot)).Str("last", dur.String()).Msg("New block received")
+	bm.Logger.Info().Int("epoch", int(block.Slot/SLOTS_PER_EPOCH)).Str("slot", fmt.Sprint(block.Slot)).Str("last", dur.String()).Msg("New beacon block")
 	bm.Reset <- true
 	last = time.Now()
 }
@@ -156,23 +164,39 @@ func (bm BeaconMonitor) startBlockTimer() {
 	}
 }
 
-func (bm BeaconMonitor) statLoop(interval time.Duration) {
+func (bm BeaconMonitor) statLoop(interval time.Duration, topics map[string]interface{}) {
 	log := bm.Logger
+
+	// No args
+	if len(topics) == 0 {
+		log.Info().Msg("No topics provided")
+		return
+	}
+
+	log.Info().Strs("topics", getKeys(topics)).Msg("Subscribed to topics")
 	for {
-		connected, connecting, disconnected, disconnecting, err := bm.GetPeerCount()
-		if err != nil {
-			log.Fatal().Err(err).Msg("")
-		}
 
-		if connected < 20 {
-			log.Warn().Int("peer_count", connected).Msg("[P2P] Low peer count")
-		} else {
-			log.Info().Int(
-				"connected", connected).Int(
-				"connecting", connecting).Int(
-				"disconnected", disconnected).Int(
-				"disconnecting", disconnecting).Msg("[P2P] Network info")
+		if settings, ok := topics["p2p"]; ok {
+			connected, connecting, disconnected, disconnecting, err := bm.GetPeerCount()
+			if err != nil {
+				log.Fatal().Err(err).Msg("")
+			}
 
+			if connected < 20 {
+				log.Warn().Int("peer_count", connected).Msg("[P2P] Low peer count")
+			} else {
+				log.Info().Int(
+					"connected", connected).Int(
+					"connecting", connecting).Int(
+					"disconnected", disconnected).Int(
+					"disconnecting", disconnecting).Msg("[P2P] Network info")
+
+			}
+
+			if settings.(config.Stat).Latency {
+				// TODO
+				// do latency check
+			}
 		}
 		time.Sleep(interval)
 	}
