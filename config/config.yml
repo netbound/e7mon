@@ -1,3 +1,7 @@
+# File: config.yml
+# Configuration file for e7mon
+
+# Execution client configuration
 execution:
   # Needs websockets for subscriptions
   api: ws://localhost:8545
@@ -14,6 +18,8 @@ execution:
       interval: 30s
       topics:
         - p2p
+
+# Beacon node configuration
 beacon:
   api: http://localhost:5052
   settings:
@@ -27,6 +33,8 @@ beacon:
       interval: 30s
       topics:
         - p2p
+
+# Validator configuration
 validator:
   api: 
   settings:
@@ -34,9 +42,14 @@ validator:
       interval: 1m
       topics:
 
-# Stats configuration. These are all the possible stats to subscribe to.
+# Stats configuration. These are all the possible topics to subscribe to.
 stats: 
   - id: p2p
-    # Enable latency checks. This will send out SYN packets to connected peers
+    # Enable latency checks. This will send out TCP SYN packets to connected peers
     # to measure latency.
     latency: true
+
+# Network configuration. Used by the p2p stat.
+net:
+  # Uncomment this line if e7mon can't find a suitable interface
+  # interface: enp11s0

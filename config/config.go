@@ -14,7 +14,19 @@ import (
 //go:embed config.yml
 var cfg []byte
 
+type Config struct {
+	ExecutionConfig *ExecutionConfig `yaml:"execution"`
+	BeaconConfig    *BeaconConfig    `yaml:"beacon"`
+	StatsConfig     []Stat           `yaml:"stats"`
+	NetConfig       *NetConfig       `yaml:"net"`
+}
+
 type ExecutionConfig struct {
+	API      string   `yaml:"api"`
+	Settings Settings `yaml:"settings"`
+}
+
+type BeaconConfig struct {
 	API      string   `yaml:"api"`
 	Settings Settings `yaml:"settings"`
 }
@@ -29,20 +41,13 @@ type StatsConfig struct {
 	Topics   []string      `yaml:"topics"`
 }
 
-type BeaconConfig struct {
-	API      string   `yaml:"api"`
-	Settings Settings `yaml:"settings"`
-}
-
-type Config struct {
-	ExecutionConfig *ExecutionConfig `yaml:"execution"`
-	BeaconConfig    *BeaconConfig    `yaml:"beacon"`
-	StatsConfig     []Stat           `yaml:"stats"`
-}
-
 type Stat struct {
 	ID      string `yaml:"id"`
 	Latency bool   `yaml:"latency,omitempty"`
+}
+
+type NetConfig struct {
+	Interface string `yaml:"interface,omitempty"`
 }
 
 func NewConfig() (*Config, error) {

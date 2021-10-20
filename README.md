@@ -13,6 +13,11 @@ This is alpha software.
 
 ## Installation
 **From source**
+Install dependencies:
+```bash
+sudo apt-get install libpcap-dev build-essential
+```
+Build the binary:
 ```bash
 git clone https://github.com/eth-tools/e7mon
 cd e7mon
