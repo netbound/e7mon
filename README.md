@@ -1,12 +1,15 @@
 # e7mon
 
 Tool for monitoring your Ethereum clients. Client-agnostic as it queries the standardized JSON-RPC APIs.
-However, the execution client should be started with the following APIs exposed:
+Requires the following APIs to be exposed on your execution client:
 * `eth`: querying the chain
 * `net`: getting P2P stats
 * `web3`: client information
 
 <img src="./docs/img/output.png" width=1200>
+
+**Disclaimer**
+This is alpha software.
 
 ## Installation
 **From source**
