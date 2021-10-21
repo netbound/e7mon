@@ -71,7 +71,7 @@ func (bm BeaconMonitor) Start() {
 	reset := make(chan bool)
 	bm.Reset = reset
 
-	ver, err := bm.GetNodeVersion()
+	ver, err := bm.NodeVersion()
 	if err != nil {
 		log.Fatal().Msg(err.Error())
 	}
@@ -81,7 +81,7 @@ func (bm BeaconMonitor) Start() {
 	// https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
 	if provider, isProvider := bm.Client.(eth2client.EventsProvider); isProvider {
 		go bm.startBlockTimer()
-		err := provider.Events(ctx, []string{"block"}, bm.NewBlockHandler)
+		err := provider.Events(ctx, []string{"block"}, bm.BlockHandler)
 		if err != nil {
 			log.Fatal().Err(err).Msg("")
 		}
@@ -97,7 +97,7 @@ func (bm BeaconMonitor) Start() {
 
 var last time.Time = time.Time{}
 
-func (bm BeaconMonitor) NewBlockHandler(event *api.Event) {
+func (bm BeaconMonitor) BlockHandler(event *api.Event) {
 	block := event.Data.(*api.BlockEvent)
 	var dur time.Duration
 	if (last == time.Time{}) {
@@ -177,7 +177,7 @@ func (bm BeaconMonitor) statLoop(interval time.Duration, topics map[string]inter
 	for {
 
 		if settings, ok := topics["p2p"]; ok {
-			connected, connecting, disconnected, disconnecting, err := bm.GetPeerCount()
+			connected, connecting, disconnected, disconnecting, err := bm.PeerCount()
 			if err != nil {
 				log.Fatal().Err(err).Msg("")
 			}
@@ -202,7 +202,7 @@ func (bm BeaconMonitor) statLoop(interval time.Duration, topics map[string]inter
 	}
 }
 
-func (bm BeaconMonitor) GetPeerCount() (int, int, int, int, error) {
+func (bm BeaconMonitor) PeerCount() (int, int, int, int, error) {
 	res, err := web.Get(bm.Config.API + "/eth/v1/node/peer_count")
 	if err != nil {
 		bm.Logger.Fatal().Err(err).Msg("")
@@ -219,8 +219,8 @@ func (bm BeaconMonitor) GetPeerCount() (int, int, int, int, error) {
 	return connected, connecting, disconnected, disconnecting, nil
 }
 
-// GetNodeVersion returns the node version.
-func (bm BeaconMonitor) GetNodeVersion() (string, error) {
+// NodeVersion returns the node version.
+func (bm BeaconMonitor) NodeVersion() (string, error) {
 	res, err := web.Get(bm.Config.API + "/eth/v1/node/version")
 	if err != nil {
 		return "", nil
@@ -230,8 +230,8 @@ func (bm BeaconMonitor) GetNodeVersion() (string, error) {
 	return gjson.GetBytes(body, "data.version").String(), nil
 }
 
-// GetFinalityCheckpoints returns the finality checkpoints as a JSON string.
-func (bm BeaconMonitor) GetFinalityCheckpoints() (string, error) {
+// FinalityCheckpoints returns the finality checkpoints as a JSON string.
+func (bm BeaconMonitor) FinalityCheckpoints() (string, error) {
 	res, err := web.Get(bm.Config.API + "/eth/v1/beacon/states/head/finality_checkpoints")
 	if err != nil {
 		return "", err

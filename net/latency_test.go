@@ -1,21 +1,33 @@
 package net
 
-// func TestGetInterface(t *testing.T) {
-// 	dev, err := getInterface("")
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
+import "testing"
 
-// 	t.Logf("Interface found: %s", dev.Name)
-// }
+var tests = []string{
+	"140.82.121.4:443",
+	"142.250.179.174:443",
+}
 
-// func TestSendPacket(t *testing.T) {
-// 	dev, err := getInterface("")
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
+func TestGetInterface(t *testing.T) {
+	dev, err := getInterface("")
+	if err != nil {
+		t.Error(err)
+	}
 
-// 	t.Logf("Sending packet on: %s", dev.Name)
+	t.Logf("Interface found: %s", dev.Name)
+}
 
-// 	sendSYNPacket(dev, "172.217.168.238", 80)
-// }
+func TestSendPacket(t *testing.T) {
+	dev, err := getInterface("")
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("Sending packet on: %s", dev.Name)
+	s := NewScanner(dev.Name)
+	results, err := s.StartLatencyScan(tests)
+	if err != nil {
+		t.Error(err)
+	}
+
+	t.Logf("%v", results)
+}

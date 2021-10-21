@@ -247,3 +247,7 @@ func (em ExecutionMonitor) GetNodeVersion() (version string, err error) {
 	}
 	return
 }
+
+func (em ExecutionMonitor) P2PStat() {
+
+}
