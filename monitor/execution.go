@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/eth-tools/e7mon/config"
+	"github.com/eth-tools/e7mon/net"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"
 	"github.com/fatih/color"
@@ -15,10 +17,11 @@ import (
 )
 
 type ExecutionMonitor struct {
-	Config *config.ExecutionConfig
-	Stats  []config.Stat
-	Client *rpc.Client
-	Logger zerolog.Logger
+	Config  *config.ExecutionConfig
+	Stats   []config.Stat
+	Client  *rpc.Client
+	Logger  zerolog.Logger
+	Scanner *net.Scanner
 }
 
 func NewExecutionMonitor() *ExecutionMonitor {
@@ -40,6 +43,8 @@ func NewExecutionMonitor() *ExecutionMonitor {
 		log.Fatal().Msg(err.Error())
 	}
 
+	// TODO: build p2p scanner if latency stat is enabled
+
 	return &ExecutionMonitor{
 		Config: cfg.ExecutionConfig,
 		Stats:  cfg.StatsConfig,
@@ -57,7 +62,7 @@ func (em ExecutionMonitor) Start() {
 
 	defer em.Client.Close()
 
-	ver, err := em.GetNodeVersion()
+	ver, err := em.NodeVersion()
 	if err != nil {
 		log.Error().Msg(err.Error())
 	}
@@ -201,7 +206,7 @@ func (em ExecutionMonitor) statLoop(interval time.Duration, topics map[string]in
 
 	for {
 		if settings, ok := topics["p2p"]; ok {
-			pc, err := em.GetPeerCount()
+			pc, err := em.PeerCount()
 			if err != nil {
 				log.Fatal().Msg(err.Error())
 			}
@@ -222,8 +227,7 @@ func (em ExecutionMonitor) statLoop(interval time.Duration, topics map[string]in
 	}
 }
 
-// TODO: replace this with geth ethclient
-func (em ExecutionMonitor) GetPeerCount() (uint64, error) {
+func (em ExecutionMonitor) PeerCount() (uint64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -237,7 +241,7 @@ func (em ExecutionMonitor) GetPeerCount() (uint64, error) {
 	return peerCount.ToInt().Uint64(), nil
 }
 
-func (em ExecutionMonitor) GetNodeVersion() (version string, err error) {
+func (em ExecutionMonitor) NodeVersion() (version string, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 

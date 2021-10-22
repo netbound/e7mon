@@ -3,8 +3,10 @@ package net
 import "testing"
 
 var tests = []string{
-	"140.82.121.4:443",
-	"142.250.179.174:443",
+	"140.82.121.4:80",
+	"142.250.179.174:80",
+	"1.1.1.1:80",
+	// "8.8.8.8:80",
 }
 
 func TestGetInterface(t *testing.T) {

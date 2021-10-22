@@ -1,6 +1,7 @@
 package net
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"math/rand"
@@ -14,13 +15,14 @@ import (
 	"github.com/google/gopacket/pcap"
 )
 
+var results = make(map[string]time.Duration)
+
 type Scanner struct {
 	InterfaceName    string
 	InterfaceAddress *pcap.InterfaceAddress
 	Device           *net.Interface
 	Handle           *pcap.Handle
 	GatewayMAC       net.HardwareAddr
-	Results          []LatencyResult
 }
 
 type LatencyResult struct {
@@ -29,10 +31,17 @@ type LatencyResult struct {
 }
 
 type RSTSettings struct {
+	// Reset caused by timeout
+	Timeout bool
 	DstIP   net.IP
 	SrcPort layers.TCPPort
 	DstPort layers.TCPPort
 	Seq     uint32
+}
+
+type ListenParams struct {
+	start   time.Time
+	DstPort layers.TCPPort
 }
 
 // Sources:
@@ -58,7 +67,7 @@ func NewScanner(ifaceName string) *Scanner {
 	}
 
 	return &Scanner{
-		InterfaceName:    ifaceName,
+		InterfaceName:    dev.Name,
 		InterfaceAddress: iAddr,
 		Device:           dev,
 		GatewayMAC:       dstMAC,
@@ -66,9 +75,9 @@ func NewScanner(ifaceName string) *Scanner {
 }
 
 // StartLatencyScan starts scanning the addresses provided in the format of "ip:port".
-func (s *Scanner) StartLatencyScan(addresses []string) ([]LatencyResult, error) {
+func (s *Scanner) StartLatencyScan(hosts []string) (map[string]time.Duration, error) {
 	var err error
-	s.Handle, err = pcap.OpenLive(s.InterfaceName, 65535, false, -time.Millisecond)
+	s.Handle, err = pcap.OpenLive(s.InterfaceName, 65535, false, pcap.BlockForever)
 	if err != nil {
 		return nil, err
 	}
@@ -83,17 +92,26 @@ func (s *Scanner) StartLatencyScan(addresses []string) ([]LatencyResult, error) 
 		return nil, err
 	}
 
+	flows := make(chan ListenParams)
 	// This channel will receive RST settings after receiving a SYN-ACK,
 	// to break down the connection.
 	reset := make(chan RSTSettings)
 
 	packetSource := gopacket.NewPacketSource(s.Handle, s.Handle.LinkType())
+	ctr := 0
 
-	for _, addr := range addresses {
-		dst, port := parseDestination(addr)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	// Start listening already
+	go s.startListener(ctx, packetSource, flows, reset)
+
+	for _, host := range hosts {
+		dst, port := parseDestination(host)
+		// Create reverse (target) flow
 
 		// Send TCP SYN packet for every address
-		pkt, err := s.buildSYNPacket(dst, port)
+		pkt, dstport, err := s.buildSYNPacket(dst, port)
 		if err != nil {
 			return nil, err
 		}
@@ -103,32 +121,33 @@ func (s *Scanner) StartLatencyScan(addresses []string) ([]LatencyResult, error) 
 			return nil, err
 		}
 
-		// Spawn a listener for every packet sent
-		go s.startListener(packetSource, addr, start, reset)
+		flows <- ListenParams{
+			start:   start,
+			DstPort: dstport,
+		}
 	}
 
-	ctr := 0
 	for rstSettings := range reset {
-		fmt.Println(rstSettings)
+		// Not expired by timeout
+		if !rstSettings.Timeout {
+			rst, err := s.buildRawRSTPacket(rstSettings)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-		rst, err := s.buildRawRSTPacket(rstSettings)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		err = s.sendRSTPacket(rst)
-		if err != nil {
-			log.Fatal(err)
+			err = s.sendRSTPacket(rst)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 
 		ctr++
-		fmt.Println(ctr >= len(addresses))
-		if ctr >= len(addresses) {
+		if ctr >= len(hosts) {
 			break
 		}
 	}
 
-	return s.Results, nil
+	return results, nil
 }
 
 func parseDestination(dstString string) (address net.IP, port uint16) {
@@ -139,25 +158,47 @@ func parseDestination(dstString string) (address net.IP, port uint16) {
 	return
 }
 
-func (s *Scanner) startListener(src *gopacket.PacketSource, host string, start time.Time, c chan<- RSTSettings) {
-	dst, port := parseDestination(host)
-	for packet := range src.Packets() {
-		ip := packet.Layer(layers.LayerTypeIPv4).(*layers.IPv4)
-		if ip.SrcIP.Equal(dst) {
-			tcp := packet.Layer(layers.LayerTypeTCP).(*layers.TCP)
-			// Don't want to detect other packets
-			if uint16(tcp.SrcPort) == port && tcp.Ack == 1 {
-				c <- RSTSettings{
-					DstIP:   dst,
+func (s *Scanner) startListener(ctx context.Context, src *gopacket.PacketSource, flows <-chan ListenParams, rst chan<- RSTSettings) {
+	targetFlows := make(map[layers.TCPPort]time.Time)
+	var (
+		ethLayer layers.Ethernet
+		ip       layers.IPv4
+		tcp      layers.TCP
+
+		decoded = []gopacket.LayerType{}
+	)
+
+	parser := gopacket.NewDecodingLayerParser(
+		layers.LayerTypeEthernet,
+		&ethLayer,
+		&ip,
+		&tcp,
+	)
+
+	// TODO: more efficient decoding (DecodingLayerParser)
+	go func() {
+		for packet := range src.Packets() {
+			parser.DecodeLayers(packet.Data(), &decoded)
+			if start, ok := targetFlows[tcp.DstPort]; ok {
+				results[fmt.Sprintf("%s:%d", ip.SrcIP, tcp.SrcPort)] = time.Since(start)
+				rst <- RSTSettings{
+					Timeout: false,
+					DstIP:   ip.SrcIP,
 					SrcPort: tcp.DstPort,
 					DstPort: tcp.SrcPort,
 					Seq:     tcp.Ack + 1,
 				}
+			}
+		}
+	}()
 
-				s.Results = append(s.Results, LatencyResult{
-					Host:    host,
-					Latency: time.Since(start),
-				})
+	for {
+		select {
+		case flow := <-flows:
+			targetFlows[flow.DstPort] = flow.start
+		case <-ctx.Done():
+			rst <- RSTSettings{
+				Timeout: true,
 			}
 		}
 	}
@@ -174,7 +215,7 @@ func (s *Scanner) sendSYNPacket(pkt []byte) (time.Time, error) {
 	return start, nil
 }
 
-func (s *Scanner) buildSYNPacket(dst net.IP, dstPort uint16) ([]byte, error) {
+func (s *Scanner) buildSYNPacket(dst net.IP, dstPort uint16) ([]byte, layers.TCPPort, error) {
 	buffer := gopacket.NewSerializeBuffer()
 
 	ether := &layers.Ethernet{
@@ -200,14 +241,14 @@ func (s *Scanner) buildSYNPacket(dst net.IP, dstPort uint16) ([]byte, error) {
 	}
 
 	if err := tcp.SetNetworkLayerForChecksum(ip); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	gopacket.SerializeLayers(buffer,
 		gopacket.SerializeOptions{FixLengths: true, ComputeChecksums: true},
 		ether, ip, tcp)
 
-	return buffer.Bytes(), nil
+	return buffer.Bytes(), tcp.SrcPort, nil
 }
 
 func (s *Scanner) sendRSTPacket(pkt []byte) error {

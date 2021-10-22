@@ -2,17 +2,21 @@ package monitor
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	web "net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
+
+	"github.com/eth-tools/e7mon/config"
+	"github.com/eth-tools/e7mon/net"
 
 	eth2client "github.com/attestantio/go-eth2-client"
 	api "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/http"
-	"github.com/eth-tools/e7mon/config"
 	"github.com/fatih/color"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -239,4 +243,79 @@ func (bm BeaconMonitor) FinalityCheckpoints() (string, error) {
 	defer res.Body.Close()
 	body, _ := io.ReadAll(res.Body)
 	return gjson.GetBytes(body, "data").String(), nil
+}
+
+type Peer struct {
+	MultiAddress string `json:"last_seen_p2p_address"`
+}
+
+type PeersResponse struct {
+	Data []Peer `json:"data"`
+}
+
+type P2PScanResult struct {
+	High    time.Duration
+	Low     time.Duration
+	Average time.Duration
+}
+
+func (bm BeaconMonitor) LatencyScan(iface string, state string) (P2PScanResult, error) {
+	log := bm.Logger
+	var (
+		peers PeersResponse
+		addrs []string
+	)
+
+	res, err := web.Get(bm.Config.API + "/eth/v1/node/peers?state=" + state)
+	if err != nil {
+		return P2PScanResult{}, err
+	}
+
+	defer res.Body.Close()
+	body, _ := io.ReadAll(res.Body)
+	err = json.Unmarshal(body, &peers)
+	if err != nil {
+		return P2PScanResult{}, err
+	}
+
+	for _, p := range peers.Data {
+		// multiaddr format: /ip4/188.166.75.68/tcp/13000
+		tmp := strings.Split(p.MultiAddress, "/")
+		addrs = append(addrs, fmt.Sprintf("%s:%s", tmp[2], tmp[4]))
+	}
+	log.Info().Int("connected", len(addrs)).Msg("[P2P] Starting latency scan")
+
+	s := net.NewScanner(iface)
+	results, err := s.StartLatencyScan(addrs)
+	if err != nil {
+		return P2PScanResult{}, err
+	}
+
+	hi := time.Nanosecond
+	lo := time.Minute
+	var total time.Duration
+	for _, v := range results {
+		if v > hi {
+			hi = v
+		}
+
+		if v < lo {
+			lo = v
+		}
+
+		total += v
+	}
+
+	avg, err := time.ParseDuration(fmt.Sprintf("%dus", int(total.Microseconds())/len(results)))
+	if err != nil {
+		return P2PScanResult{}, err
+	}
+
+	log.Info().Str("high", hi.String()).Str("low", lo.String()).Str("avg", avg.String()).Msg("[P2P] Latency scan results")
+
+	return P2PScanResult{
+		High:    hi,
+		Low:     lo,
+		Average: avg,
+	}, nil
 }

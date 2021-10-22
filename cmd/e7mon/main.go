@@ -85,6 +85,31 @@ func main() {
 					mon.Start()
 					return nil
 				},
+				Subcommands: []*cli.Command{
+					{
+						Name:  "p2pstat",
+						Usage: "prints p2p network statistics",
+						Flags: []cli.Flag{
+							&cli.StringFlag{
+								Name:    "interface",
+								Aliases: []string{"i"},
+								Usage:   "connected interface, will try to find one if none are provided",
+							},
+						},
+						Action: func(c *cli.Context) error {
+							// TODO: only works with Geth, Erigon does not have `admin` namespace.
+							// Need some way to check if admin namespace is enabled
+							mon := monitor.NewBeaconMonitor()
+							i := c.String("interface")
+							_, err := mon.LatencyScan(i, "connected")
+							if err != nil {
+								log.Fatal().Err(err).Msg("")
+							}
+
+							return nil
+						},
+					},
+				},
 			},
 		},
 	}
