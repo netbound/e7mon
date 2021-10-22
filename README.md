@@ -8,9 +8,6 @@ Requires the following APIs to be exposed on your execution client:
 
 <img src="./docs/img/output.png" width=1200>
 
-**Disclaimer**
-This is alpha software.
-
 ## Installation
 **From source**
 Install dependencies:
@@ -24,6 +21,7 @@ cd e7mon
 make install
 ```
 This will put the binary in $GOBIN, which is in your PATH.
+
 ## Usage
 First, generate the YAML config file. This is included in the binary and will be written to `$HOME/.config/e7mon/config.yml`.
 ```bash
@@ -62,6 +60,14 @@ COMMANDS:
 GLOBAL OPTIONS:
    --help, -h  show help (default: false)
 ```
+
+## Features
+* Block monitor with options
+* Statistics loop with options
+* Beacon node P2P network stats with `e7mon beacon p2pstat`
+
+## Disclaimer
+This is alpha software. If you find bugs, please submit an issue. Things can and will break.
 
 ## Todo
 - [ ] Think about all the different config options
