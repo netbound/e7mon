@@ -47,9 +47,8 @@ stats:
   - id: p2p
     # Enable latency checks. This will send out TCP SYN packets to connected peers
     # to measure latency.
-    latency: false
+    latency: true
 
 # Network configuration. Used by the p2p stat.
 net:
-  # Uncomment this line if e7mon can't find a suitable interface
-  # interface: enp11s0
+  interface: # Add interface here if e7mon can't find a suitable interface

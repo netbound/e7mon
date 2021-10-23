@@ -47,7 +47,7 @@ type Stat struct {
 }
 
 type NetConfig struct {
-	Interface string `yaml:"interface,omitempty"`
+	Interface *string `yaml:"interface,omitempty"`
 }
 
 func NewConfig() (*Config, error) {

@@ -28,15 +28,18 @@ const (
 )
 
 type BeaconMonitor struct {
-	Config *config.BeaconConfig
-	Client eth2client.Service
-	Stats  []config.Stat
-	Logger zerolog.Logger
-	Reset  chan bool
+	Config        *config.BeaconConfig
+	Client        eth2client.Service
+	Stats         []config.Stat
+	Logger        zerolog.Logger
+	InterfaceName *string
+	Reset         chan bool
+	Scanner       *net.Scanner
 }
 
 func NewBeaconMonitor() *BeaconMonitor {
 	zerolog.TimeFieldFormat = time.RFC3339Nano
+	zerolog.SetGlobalLevel(zerolog.InfoLevel)
 	output := zerolog.ConsoleWriter{Out: os.Stdout, TimeFormat: "15:04:05.000"}
 	output.FormatMessage = func(i interface{}) string {
 		p := color.New(color.FgMagenta).Add(color.Bold)
@@ -61,10 +64,11 @@ func NewBeaconMonitor() *BeaconMonitor {
 	}
 
 	return &BeaconMonitor{
-		Config: cfg.BeaconConfig,
-		Logger: log.Output(output),
-		Stats:  cfg.StatsConfig,
-		Client: client,
+		Config:        cfg.BeaconConfig,
+		Logger:        log.Output(output),
+		Stats:         cfg.StatsConfig,
+		InterfaceName: cfg.NetConfig.Interface,
+		Client:        client,
 	}
 }
 
@@ -179,7 +183,6 @@ func (bm BeaconMonitor) statLoop(interval time.Duration, topics map[string]inter
 
 	log.Info().Strs("topics", getKeys(topics)).Msg("Subscribed to topics")
 	for {
-
 		if settings, ok := topics["p2p"]; ok {
 			connected, connecting, disconnected, disconnecting, err := bm.PeerCount()
 			if err != nil {
@@ -198,8 +201,11 @@ func (bm BeaconMonitor) statLoop(interval time.Duration, topics map[string]inter
 			}
 
 			if settings.(config.Stat).Latency {
-				// TODO
-				// do latency check
+				str := ""
+				if bm.InterfaceName != nil {
+					str = *bm.InterfaceName
+				}
+				go bm.LatencyScan(str)
 			}
 		}
 		time.Sleep(interval)
@@ -259,34 +265,46 @@ type P2PScanResult struct {
 	Average time.Duration
 }
 
-func (bm BeaconMonitor) LatencyScan(iface string, state string) (P2PScanResult, error) {
-	log := bm.Logger
-	var (
-		peers PeersResponse
-		addrs []string
-	)
-
+func (bm *BeaconMonitor) Peers(state string) ([]Peer, error) {
+	var peers PeersResponse
 	res, err := web.Get(bm.Config.API + "/eth/v1/node/peers?state=" + state)
 	if err != nil {
-		return P2PScanResult{}, err
+		return nil, err
 	}
 
 	defer res.Body.Close()
 	body, _ := io.ReadAll(res.Body)
 	err = json.Unmarshal(body, &peers)
 	if err != nil {
+		return nil, err
+	}
+
+	return peers.Data, nil
+}
+
+func (bm BeaconMonitor) LatencyScan(iface string) (P2PScanResult, error) {
+	log := bm.Logger
+	var (
+		addrs []string
+	)
+
+	peers, err := bm.Peers("connected")
+	if err != nil {
 		return P2PScanResult{}, err
 	}
 
-	for _, p := range peers.Data {
+	for _, p := range peers {
 		// multiaddr format: /ip4/188.166.75.68/tcp/13000
 		tmp := strings.Split(p.MultiAddress, "/")
 		addrs = append(addrs, fmt.Sprintf("%s:%s", tmp[2], tmp[4]))
 	}
-	log.Info().Int("connected", len(addrs)).Msg("[P2P] Starting latency scan")
+	log.Trace().Int("connected", len(addrs)).Msg("[P2P] Starting latency scan")
 
-	s := net.NewScanner(iface)
-	results, err := s.StartLatencyScan(addrs)
+	if bm.Scanner == nil {
+		bm.Scanner = net.NewScanner(iface)
+	}
+
+	results, err := bm.Scanner.StartLatencyScan(addrs)
 	if err != nil {
 		return P2PScanResult{}, err
 	}

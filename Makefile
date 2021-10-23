@@ -10,6 +10,7 @@ beacon:
 	go run ./cmd/e7mon beacon
 
 install:
-	@echo $(GOPATH)
+	@echo "Installing in $(GOPATH)/bin"
 	go install ./cmd/e7mon
+	@echo "Setting net capacity (requires root privileges)"
 	sudo setcap 'CAP_NET_RAW,CAP_NET_ADMIN=eip' "$(GOPATH)/bin/e7mon"

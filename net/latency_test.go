@@ -18,7 +18,7 @@ func TestGetInterface(t *testing.T) {
 	t.Logf("Interface found: %s", dev.Name)
 }
 
-func TestSendPacket(t *testing.T) {
+func TestLatencyScan(t *testing.T) {
 	dev, err := getInterface("")
 	if err != nil {
 		t.Error(err)
