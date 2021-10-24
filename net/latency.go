@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/google/gopacket"
@@ -107,11 +106,15 @@ func (s *Scanner) StartLatencyScan(hosts []string) (map[string]time.Duration, er
 	go s.startListener(ctx, packetSource, flows, reset)
 
 	for _, host := range hosts {
-		dst, port := parseDestination(host)
-		// Create reverse (target) flow
+		dst, port, err := net.SplitHostPort(host)
+		if err != nil {
+			return nil, err
+		}
+
+		p, _ := strconv.Atoi(port)
 
 		// Send TCP SYN packet for every address
-		pkt, dstport, err := s.buildSYNPacket(dst, port)
+		pkt, dstport, err := s.buildSYNPacket(net.ParseIP(dst), uint16(p))
 		if err != nil {
 			return nil, err
 		}
@@ -150,14 +153,6 @@ func (s *Scanner) StartLatencyScan(hosts []string) (map[string]time.Duration, er
 	return results, nil
 }
 
-func parseDestination(dstString string) (address net.IP, port uint16) {
-	x := strings.Split(dstString, ":")
-	i, _ := strconv.Atoi(x[1])
-	port = uint16(i)
-	address = net.ParseIP(x[0])
-	return
-}
-
 func (s *Scanner) startListener(ctx context.Context, src *gopacket.PacketSource, flows <-chan ListenParams, rst chan<- RSTSettings) {
 	targetFlows := make(map[layers.TCPPort]time.Time)
 	var (
@@ -180,7 +175,7 @@ func (s *Scanner) startListener(ctx context.Context, src *gopacket.PacketSource,
 		for packet := range src.Packets() {
 			parser.DecodeLayers(packet.Data(), &decoded)
 			if start, ok := targetFlows[tcp.DstPort]; ok {
-				results[fmt.Sprintf("%s:%d", ip.SrcIP, tcp.SrcPort)] = time.Since(start)
+				results[fmt.Sprintf("%s:%d", ip.SrcIP, tcp.SrcPort)] = packet.Metadata().Timestamp.Sub(start)
 				rst <- RSTSettings{
 					Timeout: false,
 					DstIP:   ip.SrcIP,

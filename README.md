@@ -99,3 +99,7 @@ Sources:
 * https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md
 * https://github.com/grahamking/latency
 * https://github.com/attestantio/go-eth2-client
+
+TCP-SYN-ACK latency with eBPF:
+* https://blog.cloudflare.com/epbf_sockets_hop_distance/
+* https://pkg.go.dev/github.com/cilium/ebpf

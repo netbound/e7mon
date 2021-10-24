@@ -51,4 +51,6 @@ stats:
 
 # Network configuration. Used by the p2p stat.
 net:
-  interface: # Add interface here if e7mon can't find a suitable interface
+  # Uncomment if e7mon can't find a suitable interface
+  # interface: eth0
+  backup:

@@ -205,7 +205,8 @@ func (em ExecutionMonitor) statLoop(interval time.Duration, topics map[string]in
 	log.Info().Strs("topics", getKeys(topics)).Msg("Subscribed to topics")
 
 	for {
-		if settings, ok := topics["p2p"]; ok {
+		time.Sleep(interval)
+		if _, ok := topics["p2p"]; ok {
 			pc, err := em.PeerCount()
 			if err != nil {
 				log.Fatal().Msg(err.Error())
@@ -216,14 +217,7 @@ func (em ExecutionMonitor) statLoop(interval time.Duration, topics map[string]in
 			} else {
 				log.Info().Str("connected", fmt.Sprint(pc)).Msg("[P2P] Network info")
 			}
-
-			if settings.(config.Stat).Latency {
-				// TODO
-				// do latency check
-			}
 		}
-
-		time.Sleep(interval)
 	}
 }
 

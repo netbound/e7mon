@@ -32,7 +32,7 @@ type BeaconMonitor struct {
 	Client        eth2client.Service
 	Stats         []config.Stat
 	Logger        zerolog.Logger
-	InterfaceName *string
+	InterfaceName string
 	Reset         chan bool
 	Scanner       *net.Scanner
 }
@@ -181,13 +181,34 @@ func (bm BeaconMonitor) statLoop(interval time.Duration, topics map[string]inter
 		return
 	}
 
+	var res P2PScanResult
+	var err error
+
 	log.Info().Strs("topics", getKeys(topics)).Msg("Subscribed to topics")
 	for {
 		if settings, ok := topics["p2p"]; ok {
+			time.Sleep(interval - 5*time.Second)
+			if settings.(config.Stat).Latency {
+				str := ""
+				if bm.InterfaceName != "" {
+					str = bm.InterfaceName
+				}
+
+				go func() {
+					res, err = bm.LatencyScan(str)
+					if err != nil {
+						log.Err(err).Msg("")
+					}
+
+				}()
+			}
+
 			connected, connecting, disconnected, disconnecting, err := bm.PeerCount()
 			if err != nil {
 				log.Fatal().Err(err).Msg("")
 			}
+
+			time.Sleep(5 * time.Second)
 
 			if connected < 20 {
 				log.Warn().Int("peer_count", connected).Msg("[P2P] Low peer count")
@@ -197,18 +218,9 @@ func (bm BeaconMonitor) statLoop(interval time.Duration, topics map[string]inter
 					"connecting", connecting).Int(
 					"disconnected", disconnected).Int(
 					"disconnecting", disconnecting).Msg("[P2P] Network info")
-
 			}
-
-			if settings.(config.Stat).Latency {
-				str := ""
-				if bm.InterfaceName != nil {
-					str = *bm.InterfaceName
-				}
-				go bm.LatencyScan(str)
-			}
+			log.Info().Str("high", res.High.String()).Str("low", res.Low.String()).Str("avg", res.Average.String()).Msg("[P2P] Latency scan results")
 		}
-		time.Sleep(interval)
 	}
 }
 
@@ -328,8 +340,6 @@ func (bm BeaconMonitor) LatencyScan(iface string) (P2PScanResult, error) {
 	if err != nil {
 		return P2PScanResult{}, err
 	}
-
-	log.Info().Str("high", hi.String()).Str("low", lo.String()).Str("avg", avg.String()).Msg("[P2P] Latency scan results")
 
 	return P2PScanResult{
 		High:    hi,

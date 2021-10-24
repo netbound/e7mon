@@ -101,10 +101,12 @@ func main() {
 							// Need some way to check if admin namespace is enabled
 							mon := monitor.NewBeaconMonitor()
 							i := c.String("interface")
-							_, err := mon.LatencyScan(i)
+							res, err := mon.LatencyScan(i)
 							if err != nil {
 								log.Fatal().Err(err).Msg("")
 							}
+
+							log.Info().Str("high", res.High.String()).Str("low", res.Low.String()).Str("avg", res.Average.String()).Msg("[P2P] Latency scan results")
 
 							return nil
 						},
