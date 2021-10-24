@@ -23,7 +23,7 @@ make install
 This will put the binary in $GOBIN, which is in your PATH.
 
 ## Usage
-First, generate the YAML config file. This is included in the binary and will be written to `$HOME/.config/e7mon/config.yml`.
+First, generate the YAML [config file](./config/config.yml). This is included in the binary and will be written to `$HOME/.config/e7mon/config.yml`.
 ```bash
 e7mon init
 ```
@@ -61,45 +61,38 @@ GLOBAL OPTIONS:
    --help, -h  show help (default: false)
 ```
 
+
 ## Features
-* Block monitor with options
-* Statistics loop with options
-* Beacon node P2P network stats with `e7mon beacon p2pstat`
-
-## Disclaimer
-This is alpha software. If you find bugs, please submit an issue. Things can and will break.
-
-## Todo
-- [ ] Think about all the different config options
-* Finalized checkpoints
-* Attestations
 - Execution monitor
 	- [x] Block monitor
 	- [x] P2P stats
-      - [ ] Peers avg latency
+      - [ ] Peers avg latency (might not be worth it as only geth has the `admin_peers` RPC call)
+   - [ ] MEV alerts
 	- [ ] More generic stats
-
 - Beacon monitor
 	- [x] Block monitor
 	- [x] P2P stats
-      - [ ] Peers avg latency
+      - [x] Peers avg latency
 	- [ ] More generic stats
+   - [ ] Finalized checkpoints
 - Validator monitor
+   - [ ] Attestations
    - [ ] Produced blocks
+   - [ ] Block rewards
    - [ ] Validator stats
-- [ ] Implement verbosity levels
+- [ ] Verbosity levels
 - [ ] Integrate with beaconcha.in
-- [ ] Write API connectors for message services
+- [ ] Messaging services
 
-Sources:
+
+## Disclaimer
+This is alpha software. If you find bugs, please submit an issue. Things can and will break. Tested with the Erigon
+execution client and Lighthouse consensus node.
+
+## Sources:
 * https://ethereum.github.io/beacon-APIs/#/
 * https://geth.ethereum.org/docs/rpc/server
 * https://notes.ethereum.org/@serenity/handbook
 * https://github.com/ethereum/consensus-specs
 * https://github.com/ethereum/consensus-specs/blob/dev/specs/phase0/beacon-chain.md
-* https://github.com/grahamking/latency
 * https://github.com/attestantio/go-eth2-client
-
-TCP-SYN-ACK latency with eBPF:
-* https://blog.cloudflare.com/epbf_sockets_hop_distance/
-* https://pkg.go.dev/github.com/cilium/ebpf
