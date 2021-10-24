@@ -10,6 +10,9 @@ Requires the following APIs to be exposed on your execution client:
 
 ## Installation
 **From source**
+
+[Install Go](https://golang.org/doc/install) (minimum version 1.16)
+
 Install dependencies:
 ```bash
 sudo apt-get install libpcap-dev build-essential
