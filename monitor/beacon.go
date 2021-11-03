@@ -219,7 +219,9 @@ func (bm BeaconMonitor) statLoop(interval time.Duration, topics map[string]inter
 					"disconnected", disconnected).Int(
 					"disconnecting", disconnecting).Msg("[P2P] Network info")
 			}
-			log.Info().Str("high", res.High.String()).Str("low", res.Low.String()).Str("avg", res.Average.String()).Msg("[P2P] Latency scan results")
+			if settings.(config.Stat).Latency {
+				log.Info().Str("high", res.High.String()).Str("low", res.Low.String()).Str("avg", res.Average.String()).Msg("[P2P] Latency scan results")
+			}
 		}
 	}
 }

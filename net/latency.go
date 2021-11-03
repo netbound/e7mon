@@ -154,6 +154,7 @@ func (s *Scanner) StartLatencyScan(hosts []string) (map[string]time.Duration, er
 }
 
 func (s *Scanner) startListener(ctx context.Context, src *gopacket.PacketSource, flows <-chan ListenParams, rst chan<- RSTSettings) {
+	// TODO: fix concurrent read/write panic with mutex
 	targetFlows := make(map[layers.TCPPort]time.Time)
 	var (
 		ethLayer layers.Ethernet
@@ -170,7 +171,6 @@ func (s *Scanner) startListener(ctx context.Context, src *gopacket.PacketSource,
 		&tcp,
 	)
 
-	// TODO: more efficient decoding (DecodingLayerParser)
 	go func() {
 		for packet := range src.Packets() {
 			parser.DecodeLayers(packet.Data(), &decoded)

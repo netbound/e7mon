@@ -30,7 +30,7 @@ beacon:
       - 1m
       - 2m
     stats: 
-      interval: 30s
+      interval: 20s
       topics:
         - p2p
 
@@ -47,7 +47,7 @@ stats:
   - id: p2p
     # Enable latency checks. This will send out TCP SYN packets to connected peers
     # to measure latency.
-    latency: true
+    latency: false
 
 # Network configuration. Used by the p2p stat.
 net:
