@@ -219,8 +219,9 @@ func (bm BeaconMonitor) statLoop(interval time.Duration, topics map[string]inter
 					"disconnected", disconnected).Int(
 					"disconnecting", disconnecting).Msg("[P2P] Network info")
 			}
+
 			if settings.(config.Stat).Latency {
-				log.Info().Str("high", res.High.String()).Str("low", res.Low.String()).Str("avg", res.Average.String()).Msg("[P2P] Latency scan results")
+				log.Info().Str("high", res.High.String()).Str("low", res.Low.String()).Str("avg", res.Average.String()).Str("response_rate", fmt.Sprintf("%.2f%%", float64(res.Responses)/float64(res.Connected)*100)).Msg("[P2P] Latency scan results")
 			}
 		}
 	}
@@ -274,9 +275,11 @@ type PeersResponse struct {
 }
 
 type P2PScanResult struct {
-	High    time.Duration
-	Low     time.Duration
-	Average time.Duration
+	High      time.Duration
+	Low       time.Duration
+	Average   time.Duration
+	Connected int
+	Responses int
 }
 
 func (bm *BeaconMonitor) Peers(state string) ([]Peer, error) {
@@ -344,8 +347,10 @@ func (bm BeaconMonitor) LatencyScan(iface string) (P2PScanResult, error) {
 	}
 
 	return P2PScanResult{
-		High:    hi,
-		Low:     lo,
-		Average: avg,
+		High:      hi,
+		Low:       lo,
+		Average:   avg,
+		Connected: len(addrs),
+		Responses: len(results),
 	}, nil
 }

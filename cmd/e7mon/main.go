@@ -106,7 +106,7 @@ func main() {
 								log.Fatal().Err(err).Msg("")
 							}
 
-							log.Info().Str("high", res.High.String()).Str("low", res.Low.String()).Str("avg", res.Average.String()).Msg("[P2P] Latency scan results")
+							log.Info().Str("high", res.High.String()).Str("low", res.Low.String()).Str("avg", res.Average.String()).Str("response_rate", fmt.Sprintf("%.2f%%", float64(res.Responses)/float64(res.Connected)*100)).Msg("[P2P] Latency scan results")
 
 							return nil
 						},

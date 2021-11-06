@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/google/gopacket"
@@ -14,7 +15,17 @@ import (
 	"github.com/google/gopacket/pcap"
 )
 
-var results = make(map[string]time.Duration)
+// TODO: add mutex, we're concurrently writing to map which can cause panic
+// OR: send results over channel back to main goroutine where we can write to map,
+// -> no locks needed
+type Results map[string]time.Duration
+
+func (r *Results) Reset() {
+	*r = make(map[string]time.Duration)
+}
+
+var results Results = make(map[string]time.Duration)
+var mu sync.Mutex
 
 type Scanner struct {
 	InterfaceName    string
@@ -75,6 +86,8 @@ func NewScanner(ifaceName string) *Scanner {
 
 // StartLatencyScan starts scanning the addresses provided in the format of "ip:port".
 func (s *Scanner) StartLatencyScan(hosts []string) (map[string]time.Duration, error) {
+	// Clear results, we don't want to keep old peers
+	results.Reset()
 	var err error
 	s.Handle, err = pcap.OpenLive(s.InterfaceName, 65535, false, pcap.BlockForever)
 	if err != nil {
@@ -175,7 +188,10 @@ func (s *Scanner) startListener(ctx context.Context, src *gopacket.PacketSource,
 		for packet := range src.Packets() {
 			parser.DecodeLayers(packet.Data(), &decoded)
 			if start, ok := targetFlows[tcp.DstPort]; ok {
+				// Possible concurrent writes to map here
+				mu.Lock()
 				results[fmt.Sprintf("%s:%d", ip.SrcIP, tcp.SrcPort)] = packet.Metadata().Timestamp.Sub(start)
+				mu.Unlock()
 				rst <- RSTSettings{
 					Timeout: false,
 					DstIP:   ip.SrcIP,
