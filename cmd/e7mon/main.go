@@ -32,8 +32,9 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			{
-				Name:  "init",
-				Usage: "initializes configs",
+				Name:    "init",
+				Aliases: []string{"i"},
+				Usage:   "initializes configs",
 				Action: func(c *cli.Context) error {
 					path, err := config.InitializeConfig()
 					if err != nil {
@@ -55,8 +56,9 @@ func main() {
 				},
 			},
 			{
-				Name:  "execution",
-				Usage: "monitors the execution client (eth1)",
+				Name:    "execution",
+				Aliases: []string{"e"},
+				Usage:   "monitors the execution client (eth1)",
 				Action: func(c *cli.Context) error {
 					monitor.NewExecutionMonitor().Start()
 					return nil
@@ -86,8 +88,9 @@ func main() {
 				},
 			},
 			{
-				Name:  "beacon",
-				Usage: "monitors the beacon node (eth2)",
+				Name:    "beacon",
+				Aliases: []string{"b"},
+				Usage:   "monitors the beacon node (eth2)",
 				Action: func(c *cli.Context) error {
 					mon := monitor.NewBeaconMonitor()
 					mon.Start()

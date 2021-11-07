@@ -23,7 +23,10 @@ git clone https://github.com/netbound/e7mon
 cd e7mon
 make install
 ```
-This will put the binary in $GOBIN, which is in your PATH.
+This will put the binary in $GOBIN, which is in your PATH. You can verify the installation with:
+```bash
+e7mon client-versions
+```
 
 ## Usage
 First, generate the YAML [config file](./config/config.yml). This is included in the binary and will be written to `$HOME/.config/e7mon/config.yml`.
@@ -55,10 +58,11 @@ USAGE:
    e7mon [global options] command [command options] [arguments...]
 
 COMMANDS:
-   init       initializes configs
-   execution  monitors the execution client (eth1)
-   beacon     monitors the beacon node (eth2)
-   help, h    Shows a list of commands or help for one command
+   init, i              initializes configs
+   client-versions, cv  prints client versions
+   execution, e         monitors the execution client (eth1)
+   beacon, b            monitors the beacon node (eth2)
+   help, h              Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --help, -h  show help (default: false)
