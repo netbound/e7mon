@@ -1,4 +1,4 @@
-module github.com/eth-tools/e7mon
+module github.com/netbound/e7mon
 
 go 1.16
 

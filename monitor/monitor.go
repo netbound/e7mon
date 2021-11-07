@@ -1,7 +1,7 @@
 package monitor
 
 import (
-	"github.com/eth-tools/e7mon/config"
+	"github.com/netbound/e7mon/config"
 	"github.com/rs/zerolog/log"
 )
 

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/eth-tools/e7mon/config"
-	"github.com/eth-tools/e7mon/net"
+	"github.com/netbound/e7mon/config"
+	"github.com/netbound/e7mon/net"
 
 	eth2client "github.com/attestantio/go-eth2-client"
 	api "github.com/attestantio/go-eth2-client/api/v1"

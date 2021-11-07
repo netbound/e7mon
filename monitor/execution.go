@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/eth-tools/e7mon/config"
-	"github.com/eth-tools/e7mon/net"
+	"github.com/netbound/e7mon/config"
+	"github.com/netbound/e7mon/net"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rpc"

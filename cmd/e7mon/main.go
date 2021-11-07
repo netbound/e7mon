@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/eth-tools/e7mon/config"
-	"github.com/eth-tools/e7mon/monitor"
+	"github.com/netbound/e7mon/config"
+	"github.com/netbound/e7mon/monitor"
 
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"

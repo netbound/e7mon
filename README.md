@@ -19,7 +19,7 @@ sudo apt-get install libpcap-dev build-essential
 ```
 Build the binary:
 ```bash
-git clone https://github.com/eth-tools/e7mon
+git clone https://github.com/netbound/e7mon
 cd e7mon
 make install
 ```
