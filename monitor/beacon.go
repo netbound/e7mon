@@ -59,8 +59,10 @@ func NewBeaconMonitor() *BeaconMonitor {
 		http.WithLogLevel(zerolog.WarnLevel),
 	)
 
+	logger := log.Output(output)
+
 	if err != nil {
-		log.Fatal().Msg(err.Error())
+		logger.Fatal().Err(err).Msg("Can't connect to JSON-RPC API, is the endpoint correct and running?")
 	}
 
 	return &BeaconMonitor{
@@ -73,6 +75,8 @@ func NewBeaconMonitor() *BeaconMonitor {
 }
 
 func (bm BeaconMonitor) Start() {
+	log := bm.Logger
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -83,7 +87,7 @@ func (bm BeaconMonitor) Start() {
 	if err != nil {
 		log.Fatal().Msg(err.Error())
 	}
-	bm.Logger.Info().Str("api", bm.Config.API).Str("node_version", ver).Msg("Starting beacon node monitor")
+	log.Info().Str("api", bm.Config.API).Str("node_version", ver).Msg("Starting beacon node monitor")
 
 	// For events: no ws necessary, this API uses server streamed events (SSE)
 	// https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
@@ -248,7 +252,7 @@ func (bm BeaconMonitor) PeerCount() (int, int, int, int, error) {
 func (bm BeaconMonitor) NodeVersion() (string, error) {
 	res, err := web.Get(bm.Config.API + "/eth/v1/node/version")
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	defer res.Body.Close()
 	body, _ := io.ReadAll(res.Body)

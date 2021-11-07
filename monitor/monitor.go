@@ -1,6 +1,9 @@
 package monitor
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/netbound/e7mon/config"
 	"github.com/rs/zerolog/log"
 )
@@ -30,4 +33,23 @@ func NewMonitor() *Monitor {
 func (m Monitor) Start() {
 	go m.Execution.Start()
 	m.Consensus.Start()
+}
+
+func (m Monitor) PrintVersions() {
+	exec := NewExecutionMonitor()
+	beacon := NewBeaconMonitor()
+	execVersion, err := exec.NodeVersion()
+	if err != nil {
+		fmt.Println("Unable to get execution client version")
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fmt.Printf("Execution client version:\t%s\n", execVersion)
+	beaconVersion, err := beacon.NodeVersion()
+	if err != nil {
+		fmt.Println("Unable to get beacon client version")
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	fmt.Printf("Beacon client version:\t\t%s\n", beaconVersion)
 }

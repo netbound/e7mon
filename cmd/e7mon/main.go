@@ -46,11 +46,19 @@ func main() {
 				},
 			},
 			{
+				Name:    "client-versions",
+				Aliases: []string{"cv"},
+				Usage:   "prints client versions",
+				Action: func(c *cli.Context) error {
+					monitor.NewMonitor().PrintVersions()
+					return nil
+				},
+			},
+			{
 				Name:  "execution",
 				Usage: "monitors the execution client (eth1)",
 				Action: func(c *cli.Context) error {
-					mon := monitor.NewExecutionMonitor()
-					mon.Start()
+					monitor.NewExecutionMonitor().Start()
 					return nil
 				},
 				Subcommands: []*cli.Command{
