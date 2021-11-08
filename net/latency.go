@@ -98,7 +98,7 @@ func (s *Scanner) StartLatencyScan(hosts []string) (map[string]time.Duration, er
 	// defer s.Handle.Close()
 
 	// TCP SYN-ACK BPF filter
-	var filter = "tcp[13] = 18"
+	var filter = "tcp[tcpflags] & (tcp-syn|tcp-ack) != 0"
 	err = s.Handle.SetBPFFilter(filter)
 	if err != nil {
 		return nil, err
@@ -112,7 +112,7 @@ func (s *Scanner) StartLatencyScan(hosts []string) (map[string]time.Duration, er
 	packetSource := gopacket.NewPacketSource(s.Handle, s.Handle.LinkType())
 	ctr := 0
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	// Start listening already
