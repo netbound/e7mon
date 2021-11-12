@@ -3,11 +3,11 @@ package config
 import (
 	_ "embed"
 	"fmt"
+	"log"
 	"os"
 	"path"
 	"time"
 
-	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v2"
 )
 
@@ -55,19 +55,19 @@ func NewConfig() (*Config, error) {
 	c := Config{}
 	configPath, err := os.UserConfigDir()
 	if err != nil {
-		log.Fatal().Msg(err.Error())
+		log.Fatal(err)
 	}
 
 	configPath = path.Join(configPath, "e7mon/config.yml")
 
 	data, err := os.ReadFile(configPath)
 	if err != nil {
-		log.Fatal().Msg(err.Error())
+		log.Fatal(fmt.Errorf("error reading config file at %s, try running e7mon init first", configPath))
 	}
 
 	err = yaml.Unmarshal([]byte(data), &c)
 	if err != nil {
-		log.Fatal().Msg(err.Error())
+		log.Fatal(err)
 	}
 
 	return &c, nil
@@ -76,7 +76,7 @@ func NewConfig() (*Config, error) {
 func InitializeConfig() (string, error) {
 	configPath, err := os.UserConfigDir()
 	if err != nil {
-		log.Fatal().Msg(err.Error())
+		log.Fatal(err)
 	}
 
 	configPath = path.Join(configPath, "e7mon/config.yml")

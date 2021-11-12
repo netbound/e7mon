@@ -9,21 +9,26 @@ Requires the following APIs to be exposed on your execution client:
 <img src="./docs/img/output.png" width=1200>
 
 ## Installation
-**From source**
-
 [Install Go](https://golang.org/doc/install) (minimum version 1.16)
 
 Install dependencies:
 ```bash
 sudo apt-get install libpcap-dev build-essential
 ```
+**With Go**
+
+```bash
+go get -v github.com/netbound/e7mon
+```
+**From source**
+
 Build the binary:
 ```bash
 git clone https://github.com/netbound/e7mon
 cd e7mon
 make install
 ```
-This will put the binary in $GOBIN, which is in your PATH. You can verify the installation with:
+This will put the binary in `$GOBIN`, which is in your `$PATH`. You can verify the installation with:
 ```bash
 e7mon client-versions
 ```
