@@ -79,6 +79,12 @@ func InitializeConfig() (string, error) {
 		log.Fatal(err)
 	}
 
+	dirPath := path.Join(configPath, "e7mon")
+	_, err = os.Stat(configPath)
+	if os.IsNotExist(err) {
+		os.MkdirAll(dirPath, 0744)
+	}
+
 	configPath = path.Join(configPath, "e7mon/config.yml")
 	_, err = os.Stat(configPath)
 	if os.IsNotExist(err) {
