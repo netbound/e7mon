@@ -110,7 +110,6 @@ func (s *Scanner) StartLatencyScan(hosts []string) (map[string]time.Duration, er
 	reset := make(chan RSTSettings)
 
 	packetSource := gopacket.NewPacketSource(s.Handle, s.Handle.LinkType())
-	ctr := 0
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -143,15 +142,16 @@ func (s *Scanner) StartLatencyScan(hosts []string) (map[string]time.Duration, er
 		}
 	}
 
-	for rstSettings := range reset {
+	ctr := 0
+	for rst := range reset {
 		// Not expired by timeout
-		if !rstSettings.Timeout {
-			rst, err := s.buildRawRSTPacket(rstSettings)
+		if !rst.Timeout {
+			pkt, err := s.buildRawRSTPacket(rst)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			err = s.sendRSTPacket(rst)
+			err = s.sendRSTPacket(pkt)
 			if err != nil {
 				log.Fatal(err)
 			}
