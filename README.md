@@ -15,12 +15,16 @@ Install dependencies:
 ```bash
 sudo apt-get install libpcap-dev build-essential
 ```
-**With Go**
+#### With Go
 
 ```bash
+# Install program
 go get -v github.com/netbound/e7mon
+
+# Set necessary capabilities (required for latency scans)
+sudo setcap 'CAP_NET_RAW,CAP_NET_ADMIN=eip' $GOBIN/e7mon
 ```
-**From source**
+#### From source
 
 Build the binary:
 ```bash

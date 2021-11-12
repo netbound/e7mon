@@ -80,7 +80,7 @@ func InitializeConfig() (string, error) {
 	}
 
 	dirPath := path.Join(configPath, "e7mon")
-	_, err = os.Stat(configPath)
+	_, err = os.Stat(dirPath)
 	if os.IsNotExist(err) {
 		os.MkdirAll(dirPath, 0744)
 	}
