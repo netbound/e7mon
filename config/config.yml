@@ -15,7 +15,7 @@ execution:
       - 1m
       - 2m
     stats:
-      interval: 1m
+      interval: 20s
       topics:
         - p2p
 

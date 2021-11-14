@@ -15,9 +15,6 @@ import (
 	"github.com/google/gopacket/pcap"
 )
 
-// TODO: add mutex, we're concurrently writing to map which can cause panic
-// OR: send results over channel back to main goroutine where we can write to map,
-// -> no locks needed
 type Results map[string]time.Duration
 
 func (r *Results) Reset() {
@@ -70,6 +67,10 @@ func NewScanner(ifaceName string) *Scanner {
 	}
 
 	iAddr := getInterfaceAddress(i)
+	// No IPv4 address
+	if iAddr == nil {
+		log.Fatal(fmt.Errorf("can't get interface, please specify one in the config or provide with flag -i (--interface)"))
+	}
 
 	dstMAC, err := getGatewayMAC(iAddr, dev)
 	if err != nil {
@@ -106,7 +107,8 @@ func (s *Scanner) StartLatencyScan(hosts []string) (map[string]time.Duration, er
 
 	flows := make(chan ListenParams)
 	// This channel will receive RST settings after receiving a SYN-ACK,
-	// to break down the connection.
+	// to break down the connection. Might be useful to net get blacklisted
+	// by firewalls.
 	reset := make(chan RSTSettings)
 
 	packetSource := gopacket.NewPacketSource(s.Handle, s.Handle.LinkType())

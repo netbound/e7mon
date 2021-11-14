@@ -321,7 +321,12 @@ func (bm BeaconMonitor) LatencyScan(iface string) (P2PScanResult, error) {
 	}
 	log.Trace().Int("connected", len(addrs)).Msg("[P2P] Starting latency scan")
 
+	if bm.InterfaceName != "" {
+		iface = bm.InterfaceName
+	}
+
 	if bm.Scanner == nil {
+		// No scanner created yet
 		bm.Scanner = net.NewScanner(iface)
 	}
 
