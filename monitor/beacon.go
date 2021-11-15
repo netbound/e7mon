@@ -56,7 +56,7 @@ func NewBeaconMonitor() *BeaconMonitor {
 
 	client, err := http.New(ctx,
 		http.WithAddress(cfg.BeaconConfig.API),
-		http.WithLogLevel(zerolog.WarnLevel),
+		http.WithLogLevel(zerolog.TraceLevel),
 	)
 
 	logger := log.Output(output)
@@ -87,17 +87,10 @@ func (bm BeaconMonitor) Start() {
 	if err != nil {
 		log.Fatal().Msg(err.Error())
 	}
+
 	log.Info().Str("api", bm.Config.API).Str("node_version", ver).Msg("Starting beacon node monitor")
 
-	// For events: no ws necessary, this API uses server streamed events (SSE)
-	// https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
-	if provider, isProvider := bm.Client.(eth2client.EventsProvider); isProvider {
-		go bm.startBlockTimer()
-		err := provider.Events(ctx, []string{"block"}, bm.BlockHandler)
-		if err != nil {
-			log.Fatal().Err(err).Msg("")
-		}
-	}
+	bm.subscribeToEvents(ctx, []string{"block"}, bm.EventHandler)
 
 	topics, err := parseTopics(bm.Stats, bm.Config.Settings.StatsConfig.Topics...)
 	if err != nil {
@@ -109,22 +102,48 @@ func (bm BeaconMonitor) Start() {
 
 var last time.Time = time.Time{}
 
-func (bm BeaconMonitor) BlockHandler(event *api.Event) {
-	block := event.Data.(*api.BlockEvent)
-	var dur time.Duration
-	if (last == time.Time{}) {
-		dur, _ = time.ParseDuration("0s")
-	} else {
-		dur = time.Since(last).Round(time.Millisecond)
+func (bm *BeaconMonitor) subscribeToEvents(ctx context.Context, events []string, handler func(*api.Event)) {
+	// For events: no ws necessary, this API uses server streamed events (SSE)
+	// https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
+	if provider, isProvider := bm.Client.(eth2client.EventsProvider); isProvider {
+		go bm.startBlockTimer()
+		err := provider.Events(ctx, events, handler)
+		if err != nil {
+			log.Fatal().Err(err).Msg("")
+		}
+	}
+}
+
+func (bm BeaconMonitor) EventHandler(event *api.Event) {
+	log := bm.Logger
+
+	switch event.Data.(type) {
+	case *api.BlockEvent:
+		block := event.Data.(*api.BlockEvent)
+		var dur time.Duration
+		if (last == time.Time{}) {
+			dur, _ = time.ParseDuration("0s")
+		} else {
+			dur = time.Since(last).Round(time.Millisecond)
+		}
+
+		log.Info().Int("epoch", int(block.Slot/SLOTS_PER_EPOCH)).Str("slot", fmt.Sprint(block.Slot)).Str("last", dur.String()).Msg("New beacon block")
+		bm.Reset <- true
+		last = time.Now()
+	case *api.FinalizedCheckpointEvent:
+		cp := event.Data.(*api.FinalizedCheckpointEvent)
+		log.Info().Str("epoch", fmt.Sprint(cp.Epoch)).Msg("Checkpoint finalized")
+	case *api.ChainReorgEvent:
+		ev := event.Data.(*api.ChainReorgEvent)
+		log.Info().Uint64("depth", ev.Depth).Uint64("epoch", uint64(ev.Epoch)).Uint64("slot", uint64(ev.Slot)).Msg("Chain reorg")
+	default:
+		log.Warn().Str("event", event.String()).Msg("Unknown")
 	}
 
-	bm.Logger.Info().Int("epoch", int(block.Slot/SLOTS_PER_EPOCH)).Str("slot", fmt.Sprint(block.Slot)).Str("last", dur.String()).Msg("New beacon block")
-	bm.Reset <- true
-	last = time.Now()
 }
 
 func (bm BeaconMonitor) startBlockTimer() {
-	start := time.Now()
+	log := bm.Logger
 
 	lvl1, err := time.ParseDuration(bm.Config.Settings.BlockTimeLevels[0])
 	if err != nil {
@@ -142,51 +161,45 @@ func (bm BeaconMonitor) startBlockTimer() {
 	var lvls BlockTimeLevels = [3]*BlockTimeLevel{
 		{
 			Duration: lvl1,
-			Hit:      false,
+			Timer:    time.NewTimer(lvl1),
 		},
 		{
 			Duration: lvl2,
-			Hit:      false,
+			Timer:    time.NewTimer(lvl2),
 		},
 		{
 			Duration: lvl3,
-			Hit:      false,
+			Timer:    time.NewTimer(lvl2),
 		},
 	}
 
 	for {
 		select {
 		case <-bm.Reset:
-			start = time.Now()
 			lvls.Reset()
-		default:
-			time.Sleep(time.Millisecond * 500)
-			new := time.Now()
-			if new.After(start.Add(lvls[0].Duration)) && !lvls[0].Hit {
-				bm.Logger.Warn().Msgf("%s since last block", lvls[0].Duration)
-				lvls[0].Hit = true
-			} else if new.After(start.Add(lvls[1].Duration)) && !lvls[1].Hit {
-				bm.Logger.Warn().Msgf("%s since last block", lvls[1].Duration)
-				lvls[1].Hit = true
-			} else if new.After(start.Add(lvls[2].Duration)) && !lvls[2].Hit {
-				bm.Logger.Warn().Msgf("%s since last block", lvls[2].Duration)
-				lvls[2].Hit = true
-			}
+		case <-lvls[0].Timer.C:
+			log.Warn().Msgf("%s since last block", lvls[0].Duration)
+		case <-lvls[1].Timer.C:
+			log.Warn().Msgf("%s since last block", lvls[1].Duration)
+		case <-lvls[2].Timer.C:
+			log.Warn().Msgf("%s since last block", lvls[2].Duration)
 		}
 	}
 }
 
 func (bm BeaconMonitor) statLoop(interval time.Duration, topics map[string]interface{}) {
-	log := bm.Logger
+	var (
+		res P2PScanResult
+		err error
+
+		log = bm.Logger
+	)
 
 	// No args
 	if len(topics) == 0 {
 		log.Info().Msg("No topics provided")
 		return
 	}
-
-	var res P2PScanResult
-	var err error
 
 	log.Info().Strs("topics", getKeys(topics)).Msg("Subscribed to topics")
 	for {

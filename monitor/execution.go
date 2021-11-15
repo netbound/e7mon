@@ -66,6 +66,7 @@ func (em ExecutionMonitor) Start() {
 	if err != nil {
 		log.Error().Msg(err.Error())
 	}
+
 	log.Info().Str("api", em.Config.API).Str("node_version", ver).Msg("Starting execution client monitor")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -100,19 +101,18 @@ func (em ExecutionMonitor) Start() {
 
 type BlockTimeLevel struct {
 	Duration time.Duration
-	Hit      bool
+	Timer    *time.Timer
 }
 
 type BlockTimeLevels [3]*BlockTimeLevel
 
 func (l BlockTimeLevels) Reset() {
 	for _, b := range l {
-		b.Hit = false
+		b.Timer = time.NewTimer(b.Duration)
 	}
 }
 
 func (em ExecutionMonitor) startBlockTimer(reset <-chan bool) {
-	start := time.Now()
 	log := em.Logger
 
 	lvl1, err := time.ParseDuration(em.Config.Settings.BlockTimeLevels[0])
@@ -131,36 +131,28 @@ func (em ExecutionMonitor) startBlockTimer(reset <-chan bool) {
 	var lvls BlockTimeLevels = [3]*BlockTimeLevel{
 		{
 			Duration: lvl1,
-			Hit:      false,
+			Timer:    time.NewTimer(lvl1),
 		},
 		{
 			Duration: lvl2,
-			Hit:      false,
+			Timer:    time.NewTimer(lvl2),
 		},
 		{
 			Duration: lvl3,
-			Hit:      false,
+			Timer:    time.NewTimer(lvl3),
 		},
 	}
 
 	for {
 		select {
 		case <-reset:
-			start = time.Now()
 			lvls.Reset()
-		default:
-			time.Sleep(time.Millisecond * 500)
-			new := time.Now()
-			if new.After(start.Add(lvls[0].Duration)) && !lvls[0].Hit {
-				log.Warn().Msgf("%s since last block", lvls[0].Duration)
-				lvls[0].Hit = true
-			} else if new.After(start.Add(lvls[1].Duration)) && !lvls[1].Hit {
-				log.Warn().Msgf("%s since last block", lvls[1].Duration)
-				lvls[1].Hit = true
-			} else if new.After(start.Add(lvls[2].Duration)) && !lvls[2].Hit {
-				log.Warn().Msgf("%s since last block", lvls[2].Duration)
-				lvls[2].Hit = true
-			}
+		case <-lvls[0].Timer.C:
+			log.Warn().Msgf("%s since last block", lvls[0].Duration)
+		case <-lvls[1].Timer.C:
+			log.Warn().Msgf("%s since last block", lvls[1].Duration)
+		case <-lvls[2].Timer.C:
+			log.Warn().Msgf("%s since last block", lvls[2].Duration)
 		}
 	}
 }
