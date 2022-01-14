@@ -4,23 +4,25 @@
 
 <img src="./docs/img/output.png" width=1200>
 
-## Installation
-[Install Go](https://golang.org/doc/install) (minimum version 1.16)
+## Getting started
+### Requirements
+* [Install Go](https://golang.org/doc/install) (minimum version 1.16)
 
-Install dependencies:
+* Install dependencies:
 ```bash
 sudo apt-get install libpcap-dev build-essential
 ```
-#### With Go
+### Installation
+* **With Go**
 
 ```bash
-# Install program
+# Install e7mon
 go get -v github.com/netbound/e7mon
 
 # Set necessary capabilities (required for latency scans)
 sudo setcap 'CAP_NET_RAW,CAP_NET_ADMIN=eip' $GOBIN/e7mon
 ```
-#### From source
+* **From source**
 
 Build the binary:
 ```bash
@@ -34,12 +36,15 @@ e7mon client-versions
 ```
 
 ## Usage
+
 Requires the following APIs to be exposed on your execution client:
 * `eth`: querying the chain
 * `net`: getting P2P stats
 * `web3`: client information
+
 And the API should be enabled on your beacon node as well.
 
+### Running
 First, generate the YAML [config file](./config/config.yml). This is included in the binary and will be written to `$HOME/.config/e7mon/config.yml`.
 ```bash
 e7mon init
@@ -88,7 +93,6 @@ GLOBAL OPTIONS:
 - Execution monitor
 	- [x] Block monitor
 	- [x] P2P stats
-      - [ ] Peers avg latency (might not be worth it as only geth has the `admin_peers` RPC call)
    - [ ] MEV alerts
 	- [ ] More generic stats
 - Beacon monitor
@@ -100,7 +104,8 @@ GLOBAL OPTIONS:
 - Validator monitor
    - [ ] Attestations
    - [ ] Produced blocks
-   - [ ] Block rewards
+   - [ ] Sync committees
+   - [ ] Rewards
    - [ ] Validator stats
 - [ ] Verbosity levels
 - [ ] Integrate with beaconcha.in
