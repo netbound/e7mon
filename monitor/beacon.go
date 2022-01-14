@@ -14,7 +14,6 @@ import (
 	"github.com/netbound/e7mon/config"
 	"github.com/netbound/e7mon/net"
 
-	eth2client "github.com/attestantio/go-eth2-client"
 	api "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/http"
 	"github.com/fatih/color"
@@ -29,7 +28,7 @@ const (
 
 type BeaconMonitor struct {
 	Config        *config.BeaconConfig
-	Client        eth2client.Service
+	Client        *http.Service
 	Stats         []config.Stat
 	Logger        zerolog.Logger
 	InterfaceName string
@@ -59,6 +58,8 @@ func NewBeaconMonitor() *BeaconMonitor {
 		http.WithLogLevel(zerolog.TraceLevel),
 	)
 
+	c := client.(*http.Service)
+
 	logger := log.Output(output)
 
 	if err != nil {
@@ -70,7 +71,7 @@ func NewBeaconMonitor() *BeaconMonitor {
 		Logger:        log.Output(output),
 		Stats:         cfg.StatsConfig,
 		InterfaceName: cfg.NetConfig.Interface,
-		Client:        client,
+		Client:        c,
 	}
 }
 
@@ -105,12 +106,10 @@ var last time.Time = time.Time{}
 func (bm *BeaconMonitor) subscribeToBlocks(ctx context.Context, events []string, handler func(*api.Event)) {
 	// For events: no ws necessary, this API uses server streamed events (SSE)
 	// https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
-	if provider, isProvider := bm.Client.(eth2client.EventsProvider); isProvider {
-		go bm.startBlockTimer()
-		err := provider.Events(ctx, events, handler)
-		if err != nil {
-			log.Fatal().Err(err).Msg("")
-		}
+	go bm.startBlockTimer()
+	err := bm.Client.Events(ctx, events, handler)
+	if err != nil {
+		log.Fatal().Err(err).Msg("")
 	}
 }
 

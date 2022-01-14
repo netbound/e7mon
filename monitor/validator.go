@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	eth2client "github.com/attestantio/go-eth2-client"
 	api "github.com/attestantio/go-eth2-client/api/v1"
 	"github.com/attestantio/go-eth2-client/http"
 	"github.com/attestantio/go-eth2-client/spec/phase0"
@@ -19,7 +18,7 @@ import (
 type ValidatorMonitor struct {
 	API    string
 	Config *config.ValidatorConfig
-	Client eth2client.Service
+	Client *http.Service
 	Logger zerolog.Logger
 }
 
@@ -45,6 +44,9 @@ func NewValidatorMonitor() *ValidatorMonitor {
 		http.WithLogLevel(zerolog.TraceLevel),
 	)
 
+	// Cast to raw service to avoid type assertions
+	c := client.(*http.Service)
+
 	logger := log.Output(output)
 
 	if err != nil {
@@ -53,7 +55,7 @@ func NewValidatorMonitor() *ValidatorMonitor {
 	return &ValidatorMonitor{
 		API:    cfg.BeaconConfig.API,
 		Config: cfg.ValidatorConfig,
-		Client: client,
+		Client: c,
 		Logger: logger,
 	}
 }
@@ -78,15 +80,13 @@ func (vm *ValidatorMonitor) Start() {
 }
 
 func (vm *ValidatorMonitor) subscribeToAttestations(ctx context.Context) {
-	if provider, isProvider := vm.Client.(eth2client.EventsProvider); isProvider {
-		err := provider.Events(ctx, []string{"attestation"}, func(event *api.Event) {
-			attestation := event.Data.(*phase0.Attestation)
+	err := vm.Client.Events(ctx, []string{"attestation"}, func(event *api.Event) {
+		attestation := event.Data.(*phase0.Attestation)
 
-			vm.Logger.Info().Uint64("committee", uint64(attestation.Data.Index)).Msg("New attestation")
-		})
-		if err != nil {
-			log.Fatal().Err(err).Msg("")
-		}
+		vm.Logger.Info().Uint64("committee", uint64(attestation.Data.Index)).Msg("New attestation")
+	})
+	if err != nil {
+		log.Fatal().Err(err).Msg("")
 	}
 }
 
@@ -94,19 +94,15 @@ func (vm *ValidatorMonitor) validatorBalance(index uint64) (uint64, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
-	if provider, ok := vm.Client.(eth2client.ValidatorBalancesProvider); ok {
-		res, err := provider.ValidatorBalances(ctx, "head", []phase0.ValidatorIndex{phase0.ValidatorIndex(index)})
-		if err != nil {
-			log.Fatal().Err(err).Msg("")
-		}
-
-		if len(res) == 0 {
-			log.Warn().Msg("Validator not found")
-			return 0, nil
-		}
-
-		return uint64(res[phase0.ValidatorIndex(index)]), nil
+	res, err := vm.Client.ValidatorBalances(ctx, "head", []phase0.ValidatorIndex{phase0.ValidatorIndex(index)})
+	if err != nil {
+		log.Fatal().Err(err).Msg("")
 	}
 
-	return 0, nil
+	if len(res) == 0 {
+		log.Warn().Msg("Validator not found")
+		return 0, nil
+	}
+
+	return uint64(res[phase0.ValidatorIndex(index)]), nil
 }
