@@ -12,6 +12,7 @@ type Monitor struct {
 	Config    *config.Config
 	Execution *ExecutionMonitor
 	Consensus *BeaconMonitor
+	Validator *ValidatorMonitor
 }
 
 func NewMonitor() *Monitor {
@@ -22,17 +23,20 @@ func NewMonitor() *Monitor {
 
 	exec := NewExecutionMonitor()
 	consensus := NewBeaconMonitor()
+	validator := NewValidatorMonitor()
 
 	return &Monitor{
 		Config:    cfg,
 		Execution: exec,
 		Consensus: consensus,
+		Validator: validator,
 	}
 }
 
 func (m Monitor) Start() {
 	go m.Execution.Start()
-	m.Consensus.Start()
+	go m.Consensus.Start()
+	m.Validator.Start()
 }
 
 func (m Monitor) PrintVersions() {

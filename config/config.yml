@@ -36,7 +36,7 @@ beacon:
 
 # Validator configuration
 validator:
-  api: 
+  index: 42069
   settings:
     stats:
       interval: 1m

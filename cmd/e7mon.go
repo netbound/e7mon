@@ -124,6 +124,16 @@ func Execute() {
 					},
 				},
 			},
+			{
+				Name:    "validator",
+				Aliases: []string{"v"},
+				Usage:   "monitors the validator (eth2)",
+				Action: func(c *cli.Context) error {
+					mon := monitor.NewValidatorMonitor()
+					mon.Start()
+					return nil
+				},
+			},
 		},
 	}
 	err := app.Run(os.Args)

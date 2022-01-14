@@ -77,7 +77,7 @@ func NewBeaconMonitor() *BeaconMonitor {
 func (bm BeaconMonitor) Start() {
 	log := bm.Logger
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 
 	reset := make(chan bool)
@@ -90,7 +90,7 @@ func (bm BeaconMonitor) Start() {
 
 	log.Info().Str("api", bm.Config.API).Str("node_version", ver).Msg("Starting beacon node monitor")
 
-	bm.subscribeToEvents(ctx, []string{"block"}, bm.EventHandler)
+	bm.subscribeToBlocks(ctx, []string{"block"}, bm.EventHandler)
 
 	topics, err := parseTopics(bm.Stats, bm.Config.Settings.StatsConfig.Topics...)
 	if err != nil {
@@ -102,7 +102,7 @@ func (bm BeaconMonitor) Start() {
 
 var last time.Time = time.Time{}
 
-func (bm *BeaconMonitor) subscribeToEvents(ctx context.Context, events []string, handler func(*api.Event)) {
+func (bm *BeaconMonitor) subscribeToBlocks(ctx context.Context, events []string, handler func(*api.Event)) {
 	// For events: no ws necessary, this API uses server streamed events (SSE)
 	// https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
 	if provider, isProvider := bm.Client.(eth2client.EventsProvider); isProvider {

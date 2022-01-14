@@ -17,6 +17,7 @@ var cfg []byte
 type Config struct {
 	ExecutionConfig *ExecutionConfig `yaml:"execution"`
 	BeaconConfig    *BeaconConfig    `yaml:"beacon"`
+	ValidatorConfig *ValidatorConfig `yaml:"validator"`
 	StatsConfig     []Stat           `yaml:"stats"`
 	NetConfig       *NetConfig       `yaml:"net"`
 }
@@ -28,6 +29,12 @@ type ExecutionConfig struct {
 
 type BeaconConfig struct {
 	API      string   `yaml:"api"`
+	Settings Settings `yaml:"settings"`
+}
+
+type ValidatorConfig struct {
+	ID       string   `yaml:"id"`
+	Index    uint64   `yaml:"index"`
 	Settings Settings `yaml:"settings"`
 }
 
